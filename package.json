@@ -1,0 +1,15 @@
+{
+  "private": true,
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "dev": "concurrently -k \"npm --workspace dashboard-server run dev\" \"npm --workspace dashboard-client run dev\"",
+    "build": "npm --workspace dashboard-client run build",
+    "preview": "npm --workspace dashboard-client run preview"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

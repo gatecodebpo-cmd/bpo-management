@@ -1,0 +1,32 @@
+import mongoose from "mongoose";
+
+const orderSchema = new mongoose.Schema(
+  {
+    employeeId: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
+    employeeName: { type: String, default: "" },
+    customerName: { type: String, required: true, trim: true },
+    mobileNumber: { type: String, required: true, trim: true },
+    fullAddress: { type: String, required: true, trim: true },
+    pincode: { type: String, required: true, trim: true },
+    productType: {
+      type: String,
+      enum: ["GPS", "Vending Machine", "Disposal", "Other"],
+      required: true
+    },
+    customProductName: { type: String, default: "" },
+    numberOfUnits: { type: Number, required: true, min: 1 },
+    amount: { type: Number, required: true, min: 0 },
+    totalAmount: { type: Number, required: true, min: 0 },
+    advanceAmount: { type: Number, required: true, min: 0 },
+    paymentScreenshot: { type: String, default: "" },
+    dateOfOrder: { type: Date, default: Date.now },
+    orderStatus: {
+      type: String,
+      enum: ["Pending", "Approved", "Processing", "Delivered", "Cancelled"],
+      default: "Pending"
+    }
+  },
+  { timestamps: true }
+);
+
+export const Order = mongoose.model("Order", orderSchema);
