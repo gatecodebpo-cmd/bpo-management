@@ -100,7 +100,7 @@ const OrdersOverviewChart = ({ data = [45, 52, 48, 65, 58, 72, 68, 85] }) => {
   }).join(" ");
 
   return (
-    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
+    <svg viewBox={`0 0 ${width} ${height}`} style={{ width: "100%", height: "auto" }}>
       <defs>
         <linearGradient id="orderGrad" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.2" />
@@ -141,7 +141,7 @@ const RevenueTrendChart = ({ data = [45000, 52000, 48000, 65000, 58000, 72000, 6
   }).join(" ");
 
   return (
-    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
+    <svg viewBox={`0 0 ${width} ${height}`} style={{ width: "100%", height: "auto" }}>
       <defs>
         <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.35" />
@@ -177,7 +177,7 @@ const BarChart = ({ data = [30, 45, 38, 52, 48, 60, 55, 70, 62, 75, 80, 90] }) =
   const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
   return (
-    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
+    <svg viewBox={`0 0 ${width} ${height}`} style={{ width: "100%", height: "auto" }}>
       {[0, 1, 2, 3, 4].map(i => (
         <line key={`bg-${i}`} x1={padding} y1={height - padding - (i * (height - padding * 1.5) / 4)} x2={width} y2={height - padding - (i * (height - padding * 1.5) / 4)} stroke="#e2e8f0" strokeWidth="1" />
       ))}
@@ -273,9 +273,7 @@ const AdminDashboardPage = () => {
 
   useEffect(() => {
     const interval = setInterval(load, 30000);
-    const onFocus = () => { load(); };
-    window.addEventListener("focus", onFocus);
-    return () => { clearInterval(interval); window.removeEventListener("focus", onFocus); };
+    return () => clearInterval(interval);
   }, [load]);
 
   const sparkData = useMemo(() => ({
@@ -307,19 +305,47 @@ const AdminDashboardPage = () => {
     { name: "Sensor", stock: "2" },
   ];
 
-  const topProducts = [
-    { name: "Welding Machine", sales: "1,234", orders: 45 },
-    { name: "OPS Device", sales: "876", orders: 32 },
-    { name: "Water Purifier", sales: "654", orders: 28 },
-    { name: "Accessories", sales: "432", orders: 15 },
-  ];
+  const topProducts = useMemo(() => {
+    const counts = {};
+    orders.forEach(o => {
+      const name = o.productType === "Other" ? (o.customProductName || "Other Device") : o.productType;
+      if (!counts[name]) {
+        counts[name] = { name, salesCount: 0, ordersCount: 0 };
+      }
+      counts[name].salesCount += o.numberOfUnits || 0;
+      counts[name].ordersCount += 1;
+    });
 
-  const topCustomers = [
-    { name: "Rahul Sharma", orders: "25 Orders", amount: "₹1,25,000" },
-    { name: "Anil Kumar", orders: "18 Orders", amount: "₹95,000" },
-    { name: "Nisha Singh", orders: "15 Orders", amount: "₹75,000" },
-    { name: "Vikram Patel", orders: "12 Orders", amount: "₹60,000" },
-  ];
+    return Object.values(counts)
+      .sort((a, b) => b.salesCount - a.salesCount)
+      .slice(0, 4)
+      .map(item => ({
+        name: item.name,
+        sales: `${item.salesCount.toLocaleString()} units`,
+        orders: item.ordersCount
+      }));
+  }, [orders]);
+
+  const topCustomers = useMemo(() => {
+    const counts = {};
+    orders.forEach(o => {
+      const name = o.customerName || "Unknown Customer";
+      if (!counts[name]) {
+        counts[name] = { name, ordersCount: 0, amountSum: 0 };
+      }
+      counts[name].ordersCount += 1;
+      counts[name].amountSum += o.totalAmount || 0;
+    });
+
+    return Object.values(counts)
+      .sort((a, b) => b.amountSum - a.amountSum)
+      .slice(0, 4)
+      .map(item => ({
+        name: item.name,
+        orders: `${item.ordersCount} Order${item.ordersCount !== 1 ? "s" : ""}`,
+        amount: `₹${item.amountSum.toLocaleString()}`
+      }));
+  }, [orders]);
 
   const totalStatusCount = summary.deliveredOrders + summary.processingOrders + summary.pendingOrders + summary.cancelledOrders;
 
@@ -438,15 +464,19 @@ const AdminDashboardPage = () => {
             <a href="#" className="view-all-link">View All</a>
           </div>
           <div className="products-list">
-            {topProducts.map((product, i) => (
-              <div key={i} className="product-row">
-                <div className="product-number">{i + 1}</div>
-                <div className="product-details">
-                  <p className="product-name">{product.name}</p>
-                  <p className="sales-text">{product.sales}</p>
+            {topProducts.length === 0 ? (
+              <p style={{ color: "var(--text-muted)", fontSize: "13px", margin: "16px 0 0" }}>No products sold yet</p>
+            ) : (
+              topProducts.map((product, i) => (
+                <div key={i} className="product-row">
+                  <div className="product-number">{i + 1}</div>
+                  <div className="product-details">
+                    <p className="product-name">{product.name}</p>
+                    <p className="sales-text">{product.sales}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
 
@@ -456,16 +486,20 @@ const AdminDashboardPage = () => {
             <a href="#" className="view-all-link">View All</a>
           </div>
           <div className="customers-list">
-            {topCustomers.map((customer, i) => (
-              <div key={i} className="customer-item">
-                <div className="customer-avatar">{customer.name.charAt(0)}</div>
-                <div className="customer-info">
-                  <p className="customer-name">{customer.name}</p>
-                  <p className="customer-orders">{customer.orders}</p>
+            {topCustomers.length === 0 ? (
+              <p style={{ color: "var(--text-muted)", fontSize: "13px", margin: "16px 0 0" }}>No customers registered yet</p>
+            ) : (
+              topCustomers.map((customer, i) => (
+                <div key={i} className="customer-item">
+                  <div className="customer-avatar">{customer.name.charAt(0)}</div>
+                  <div className="customer-info">
+                    <p className="customer-name">{customer.name}</p>
+                    <p className="customer-orders">{customer.orders}</p>
+                  </div>
+                  <p className="customer-amount">{customer.amount}</p>
                 </div>
-                <p className="customer-amount">{customer.amount}</p>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       </div>
