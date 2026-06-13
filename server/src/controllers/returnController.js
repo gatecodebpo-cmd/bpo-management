@@ -31,6 +31,30 @@ export const getReturnRequests = async (req, res, next) => {
   }
 };
 
+export const updateReturn = async (req, res, next) => {
+  try {
+    if (!isDatabaseReady()) {
+      return res.status(503).json({ message: "Database unavailable. Cannot update return." });
+    }
+    const allowedFields = [
+      "customerName", "mobileNumber", "pincode", "productType",
+      "numberOfUnitsReturning", "returnReason", "customReason",
+      "additionalDescription", "returnDate", "returnStatus"
+    ];
+    const update = {};
+    for (const field of allowedFields) {
+      if (req.body[field] !== undefined) update[field] = req.body[field];
+    }
+    const request = await ReturnRequest.findByIdAndUpdate(req.params.id, update, { new: true });
+    if (!request) {
+      return res.status(404).json({ message: "Return request not found" });
+    }
+    return res.status(200).json({ message: "Return updated successfully", data: request });
+  } catch (error) {
+    return next(error);
+  }
+};
+
 export const updateReturnStatus = async (req, res, next) => {
   try {
     if (!isDatabaseReady()) {

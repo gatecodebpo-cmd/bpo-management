@@ -47,6 +47,30 @@ export const getOrders = async (req, res, next) => {
   }
 };
 
+export const updateOrder = async (req, res, next) => {
+  try {
+    if (!isDatabaseReady()) {
+      return res.status(503).json({ message: "Database unavailable. Cannot update order." });
+    }
+    const allowedFields = [
+      "customerName", "mobileNumber", "fullAddress", "pincode",
+      "productType", "customProductName", "numberOfUnits", "amount",
+      "totalAmount", "advanceAmount", "dateOfOrder", "orderStatus"
+    ];
+    const update = {};
+    for (const field of allowedFields) {
+      if (req.body[field] !== undefined) update[field] = req.body[field];
+    }
+    const order = await Order.findByIdAndUpdate(req.params.id, update, { new: true });
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+    return res.status(200).json({ message: "Order updated successfully", data: order });
+  } catch (error) {
+    return next(error);
+  }
+};
+
 export const updateOrderStatus = async (req, res, next) => {
   try {
     if (!isDatabaseReady()) {

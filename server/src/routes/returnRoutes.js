@@ -2,6 +2,7 @@ import express from "express";
 import {
   createReturnRequest,
   getReturnRequests,
+  updateReturn,
   updateReturnStatus
 } from "../controllers/returnController.js";
 import { protect, adminOnly } from "../middleware/authMiddleware.js";
@@ -15,6 +16,7 @@ const router = express.Router();
 
 router.post("/", protect, createReturnRequestValidator, validateRequest, createReturnRequest);
 router.get("/", protect, adminOnly, getReturnRequests);
+router.put("/:id", protect, adminOnly, updateReturn);
 router.patch("/:id/status", protect, adminOnly, updateReturnStatusValidator, validateRequest, updateReturnStatus);
 
 export default router;

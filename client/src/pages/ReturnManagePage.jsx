@@ -1,6 +1,9 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 import { api } from "../api/client";
 import DataTable from "../components/DataTable";
+import EditModal from "../components/EditModal";
 
 const formatDateTime = (dateString) => {
   if (!dateString) return "-";
@@ -26,6 +29,27 @@ const statusBadge = (status) => {
   );
 };
 
+const returnEditFields = [
+  { key: "customerName", label: "Customer Name" },
+  { key: "mobileNumber", label: "Mobile Number" },
+  { key: "pincode", label: "Pincode" },
+  {
+    key: "productType", label: "Product Type", type: "select",
+    options: ["GPS", "Vending Machine", "Disposal", "Other"]
+  },
+  { key: "numberOfUnitsReturning", label: "Units Returning", type: "number" },
+  {
+    key: "returnReason", label: "Return Reason", type: "select",
+    options: ["Product Damaged", "Wrong Product", "Product Not Working", "Extra Order", "Other"]
+  },
+  { key: "customReason", label: "Custom Reason" },
+  { key: "additionalDescription", label: "Additional Description", type: "textarea" },
+  {
+    key: "returnStatus", label: "Status", type: "select",
+    options: ["Return Requested", "Return Approved", "Pickup Scheduled", "Returned Successfully", "Return Rejected"]
+  },
+];
+
 const columns = [
   { key: "customerName", label: "Customer" },
   { key: "mobileNumber", label: "Mobile" },
@@ -50,9 +74,48 @@ const fetchReturns = async () => {
   return res.data.data;
 };
 
+const downloadAllReturnsPDF = (returns) => {
+  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  let y = 20;
+
+  doc.setFontSize(18);
+  doc.setFont("helvetica", "bold");
+  doc.text("All Returns Report", pageWidth / 2, y, { align: "center" });
+  y += 8;
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.text(`Generated: ${new Date().toLocaleDateString("en-IN")} | Total Returns: ${returns.length}`, pageWidth / 2, y, { align: "center" });
+  y += 10;
+
+  const rows = returns.map((r) => [
+    (r._id || "").slice(-6).toUpperCase(),
+    r.customerName || "-",
+    r.mobileNumber || "-",
+    r.productType || "-",
+    r.numberOfUnitsReturning || 0,
+    r.returnReason || "-",
+    r.returnStatus || "-",
+    formatDateTime(r.createdAt)
+  ]);
+
+  autoTable(doc, {
+    startY: y,
+    head: [["ID", "Customer", "Mobile", "Product", "Units", "Reason", "Status", "Date"]],
+    body: rows,
+    theme: "grid",
+    headStyles: { fillColor: [245, 158, 11], fontSize: 8 },
+    bodyStyles: { fontSize: 7 },
+    styles: { cellPadding: 2 }
+  });
+
+  doc.save("All_Returns_Report.pdf");
+};
+
 const ReturnManagePage = () => {
   const [returns, setReturns] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [editRow, setEditRow] = useState(null);
 
   useEffect(() => {
     let mounted = true;
@@ -61,14 +124,28 @@ const ReturnManagePage = () => {
     return () => { mounted = false; };
   }, []);
 
-  const handleRefresh = () => {
+  const handleRefresh = useCallback(() => {
     setLoading(true);
     fetchReturns().then((data) => { setReturns(data); setLoading(false); }).catch((e) => { setLoading(false); console.error("Failed to refresh returns:", e); });
-  };
+  }, []);
 
   const updateReturnStatus = async (id, status) => {
     await api.patch(`/returns/${id}/status`, { returnStatus: status });
     handleRefresh();
+  };
+
+  const handleEdit = (row) => {
+    setEditRow(row);
+  };
+
+  const handleSaveEdit = async (form) => {
+    await api.put(`/returns/${form._id}`, form);
+    setEditRow(null);
+    handleRefresh();
+  };
+
+  const handleDownloadPDF = () => {
+    downloadAllReturnsPDF(returns);
   };
 
   return (
@@ -80,7 +157,12 @@ const ReturnManagePage = () => {
             Manage and update return requests
           </p>
         </div>
-        <button className="logout-btn" onClick={handleRefresh} title="Refresh data">Refresh</button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button className="primary-btn" style={{ background: "#10b981" }} onClick={handleDownloadPDF}>
+            Download PDF
+          </button>
+          <button className="logout-btn" onClick={handleRefresh}>Refresh</button>
+        </div>
       </div>
 
       {loading ? (
@@ -93,6 +175,17 @@ const ReturnManagePage = () => {
           statusOptions={["Return Requested", "Return Approved", "Pickup Scheduled", "Returned Successfully", "Return Rejected"]}
           onStatusChange={updateReturnStatus}
           searchKeys={["customerName", "mobileNumber", "productType", "returnStatus"]}
+          onEdit={handleEdit}
+        />
+      )}
+
+      {editRow && (
+        <EditModal
+          title="Return"
+          fields={returnEditFields}
+          data={editRow}
+          onSave={handleSaveEdit}
+          onClose={() => setEditRow(null)}
         />
       )}
     </section>

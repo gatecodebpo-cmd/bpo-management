@@ -1,5 +1,6 @@
 import { Order } from "../models/Order.js";
 import { ReturnRequest } from "../models/ReturnRequest.js";
+import { CallingRecord } from "../models/CallingRecord.js";
 import { User } from "../models/User.js";
 
 const getDateRange = (filter, startDate, endDate) => {
@@ -114,6 +115,84 @@ export const getEmployeeHistory = async (req, res, next) => {
     ]);
 
     return res.status(200).json({ data: { orders, returns } });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+const buildDateFilter = (startDate, endDate) => {
+  const filter = {};
+  if (startDate || endDate) {
+    filter.createdAt = {};
+    if (startDate) { const s = new Date(startDate); s.setHours(0, 0, 0, 0); filter.createdAt.$gte = s; }
+    if (endDate) { const e = new Date(endDate); e.setHours(23, 59, 59, 999); filter.createdAt.$lte = e; }
+  }
+  return filter;
+};
+
+const buildCallingDateFilter = (startDate, endDate) => {
+  const filter = {};
+  if (startDate || endDate) {
+    filter.date = {};
+    if (startDate) { const s = new Date(startDate); s.setHours(0, 0, 0, 0); filter.date.$gte = s; }
+    if (endDate) { const e = new Date(endDate); e.setHours(23, 59, 59, 999); filter.date.$lte = e; }
+  }
+  return filter;
+};
+
+export const getEmployeeDetails = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { startDate, endDate } = req.query;
+
+    const employee = await User.findById(id).select("-password");
+    if (!employee) {
+      return res.status(404).json({ message: "Employee not found" });
+    }
+
+    const orderFilter = { employeeId: id, ...buildDateFilter(startDate, endDate) };
+    const returnFilter = { employeeId: id, ...buildDateFilter(startDate, endDate) };
+    const callFilter = { employeeId: id, ...buildCallingDateFilter(startDate, endDate) };
+
+    const [orders, returns, callingRecords] = await Promise.all([
+      Order.find(orderFilter).sort({ createdAt: -1 }),
+      ReturnRequest.find(returnFilter).sort({ createdAt: -1 }),
+      CallingRecord.find(callFilter).sort({ date: -1, createdAt: -1 })
+    ]);
+
+    return res.status(200).json({
+      data: {
+        employee,
+        orders,
+        returns,
+        callingRecords
+      }
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const getEmployeeSummary = async (req, res, next) => {
+  try {
+    const { startDate, endDate } = req.query;
+    const employees = await User.find({ role: "employee" }).select("-password").lean();
+    const orderFilter = buildDateFilter(startDate, endDate);
+    const returnFilter = buildDateFilter(startDate, endDate);
+    const callFilter = buildCallingDateFilter(startDate, endDate);
+
+    const summary = await Promise.all(
+      employees.map(async (emp) => {
+        const [orderCount, returnCount, callingCount] = await Promise.all([
+          Order.countDocuments({ employeeId: emp._id, ...orderFilter }),
+          ReturnRequest.countDocuments({ employeeId: emp._id, ...returnFilter }),
+          CallingRecord.countDocuments({ employeeId: emp._id, ...callFilter })
+        ]);
+        return { ...emp, orderCount, returnCount, callingCount };
+      })
+    );
+
+    return res.status(200).json({ data: summary });
   } catch (error) {
     return next(error);
   }

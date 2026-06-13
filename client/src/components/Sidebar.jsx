@@ -166,9 +166,9 @@ const Sidebar = () => {
           <span className="sidebar-icon"><PhoneIcon /></span>
           Calling Report
         </NavLink>
-        <NavLink to="/admin/employee-records" className="sidebar-link">
+        <NavLink to="/admin/employee-details" className="sidebar-link">
           <span className="sidebar-icon"><ClockIcon /></span>
-          Employee Records
+          Employee Details
         </NavLink>
         {bottomLinks.map(({ to, label, icon: Icon }) => (
           <NavLink key={to} to={to} className="sidebar-link">

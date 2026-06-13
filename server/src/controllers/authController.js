@@ -161,12 +161,12 @@ export const loginAdmin = async (req, res, next) => {
     const { email, password, role } = req.body;
 
     if (!isDatabaseReady()) {
-      if (!isFixedAdminCredentials(email, password)) {
-        return res.status(401).json({ message: "Invalid credentials" });
+      if (role === "employee") {
+        return res.status(503).json({ message: "Database offline. Employee login unavailable." });
       }
 
-      if (role === "employee") {
-        return res.status(403).json({ message: "Only Employee users can login here." });
+      if (!isFixedAdminCredentials(email, password)) {
+        return res.status(401).json({ message: "Invalid credentials" });
       }
 
       const adminUser = getFixedAdminUser();

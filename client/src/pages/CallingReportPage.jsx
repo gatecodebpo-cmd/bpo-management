@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 import { api } from "../api/client";
 
 const FILTERS = ["today", "yesterday", "week", "month", "custom"];
@@ -16,6 +18,49 @@ const formatLabel = (f) => {
 
 const formatDate = (d) =>
   d ? new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "-";
+
+const downloadCallingPDF = (records, filter, startDate, endDate) => {
+  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  let y = 20;
+
+  doc.setFontSize(18);
+  doc.setFont("helvetica", "bold");
+  doc.text("Calling Report", pageWidth / 2, y, { align: "center" });
+  y += 8;
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  const period = startDate || endDate ? `${startDate || "..."} to ${endDate || "..."}` : filter;
+  doc.text(`Period: ${period} | Total Records: ${records.length}`, pageWidth / 2, y, { align: "center" });
+  y += 10;
+
+  const rows = records.map((r) => [
+    formatDate(r.date),
+    r.employeeName || "-",
+    r.outgoingCalls || 0,
+    r.incomingCalls || 0,
+    r.connectedCalls || 0,
+    r.notConnectedCalls || 0,
+    r.interestedLeads || 0,
+    r.notInterestedLeads || 0,
+    r.followUpCalls || 0,
+    r.followUpLeads || 0,
+    (r.outgoingCalls || 0) + (r.incomingCalls || 0),
+    r.conversionsDone || 0,
+    `Rs.${r.revenueGenerated || 0}`
+  ]);
+
+  autoTable(doc, {
+    startY: y, theme: "grid",
+    head: [["Date", "Executive", "Outgoing", "Incoming", "Connected", "Not Conn.", "Interested", "Not Int.", "F/U Calls", "F/U Leads", "Total", "Conv.", "Revenue"]],
+    body: rows,
+    headStyles: { fillColor: [6, 182, 212], fontSize: 7 },
+    bodyStyles: { fontSize: 6 },
+    styles: { cellPadding: 1.5 }
+  });
+
+  doc.save("Calling_Report.pdf");
+};
 
 const CallingReportPage = () => {
   const [records, setRecords] = useState([]);
@@ -103,6 +148,9 @@ const CallingReportPage = () => {
           <h2>Calling Report</h2>
           <p className="page-subtitle">Track daily calling performance and lead generation</p>
         </div>
+        <button className="primary-btn" style={{ background: "#10b981" }} onClick={() => downloadCallingPDF(records, filter, startDate, endDate)}>
+          Download PDF
+        </button>
       </div>
 
       <div style={{ display: "flex", gap: 16, marginBottom: 20, flexWrap: "wrap", alignItems: "end" }}>

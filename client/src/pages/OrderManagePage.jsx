@@ -1,6 +1,9 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 import { api, toAbsoluteAssetUrl } from "../api/client";
 import DataTable from "../components/DataTable";
+import EditModal from "../components/EditModal";
 
 const formatCurrency = (value) =>
   new Intl.NumberFormat("en-IN", {
@@ -31,6 +34,26 @@ const statusBadge = (status) => {
   );
 };
 
+const orderEditFields = [
+  { key: "customerName", label: "Customer Name" },
+  { key: "mobileNumber", label: "Mobile Number" },
+  { key: "fullAddress", label: "Full Address" },
+  { key: "pincode", label: "Pincode" },
+  {
+    key: "productType", label: "Product Type", type: "select",
+    options: ["GPS", "Vending Machine", "Disposal", "Other"]
+  },
+  { key: "customProductName", label: "Custom Product Name" },
+  { key: "numberOfUnits", label: "Number of Units", type: "number" },
+  { key: "amount", label: "Amount (per unit)", type: "number" },
+  { key: "totalAmount", label: "Total Amount", type: "number" },
+  { key: "advanceAmount", label: "Advance Amount", type: "number" },
+  {
+    key: "orderStatus", label: "Status", type: "select",
+    options: ["Pending", "Approved", "Processing", "Delivered", "Cancelled"]
+  },
+];
+
 const columns = [
   { key: "customerName", label: "Customer" },
   { key: "mobileNumber", label: "Mobile" },
@@ -58,9 +81,49 @@ const fetchOrders = async () => {
   return res.data.data;
 };
 
+const downloadAllOrdersPDF = (orders) => {
+  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  let y = 20;
+
+  doc.setFontSize(18);
+  doc.setFont("helvetica", "bold");
+  doc.text("All Orders Report", pageWidth / 2, y, { align: "center" });
+  y += 8;
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.text(`Generated: ${new Date().toLocaleDateString("en-IN")} | Total Orders: ${orders.length}`, pageWidth / 2, y, { align: "center" });
+  y += 10;
+
+  const rows = orders.map((o) => [
+    (o._id || "").slice(-6).toUpperCase(),
+    o.customerName || "-",
+    o.mobileNumber || "-",
+    o.productType || "-",
+    o.numberOfUnits || 0,
+    `Rs.${o.totalAmount || 0}`,
+    o.advanceAmount ? `Rs.${o.advanceAmount}` : "-",
+    o.orderStatus || "-",
+    formatDateTime(o.createdAt)
+  ]);
+
+  autoTable(doc, {
+    startY: y,
+    head: [["ID", "Customer", "Mobile", "Product", "Units", "Total", "Advance", "Status", "Date"]],
+    body: rows,
+    theme: "grid",
+    headStyles: { fillColor: [6, 182, 212], fontSize: 8 },
+    bodyStyles: { fontSize: 7 },
+    styles: { cellPadding: 2 }
+  });
+
+  doc.save("All_Orders_Report.pdf");
+};
+
 const OrderManagePage = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [editRow, setEditRow] = useState(null);
 
   useEffect(() => {
     let mounted = true;
@@ -69,14 +132,28 @@ const OrderManagePage = () => {
     return () => { mounted = false; };
   }, []);
 
-  const handleRefresh = () => {
+  const handleRefresh = useCallback(() => {
     setLoading(true);
     fetchOrders().then((data) => { setOrders(data); setLoading(false); }).catch((e) => { setLoading(false); console.error("Failed to refresh orders:", e); });
-  };
+  }, []);
 
   const updateOrderStatus = async (id, status) => {
     await api.patch(`/orders/${id}/status`, { orderStatus: status });
     handleRefresh();
+  };
+
+  const handleEdit = (row) => {
+    setEditRow(row);
+  };
+
+  const handleSaveEdit = async (form) => {
+    await api.put(`/orders/${form._id}`, form);
+    setEditRow(null);
+    handleRefresh();
+  };
+
+  const handleDownloadPDF = () => {
+    downloadAllOrdersPDF(orders);
   };
 
   return (
@@ -88,7 +165,12 @@ const OrderManagePage = () => {
             Manage and update order statuses
           </p>
         </div>
-        <button className="logout-btn" onClick={handleRefresh} title="Refresh data">Refresh</button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button className="primary-btn" style={{ background: "#10b981" }} onClick={handleDownloadPDF}>
+            Download PDF
+          </button>
+          <button className="logout-btn" onClick={handleRefresh}>Refresh</button>
+        </div>
       </div>
 
       {loading ? (
@@ -101,6 +183,17 @@ const OrderManagePage = () => {
           statusOptions={["Pending", "Approved", "Processing", "Delivered", "Cancelled"]}
           onStatusChange={updateOrderStatus}
           searchKeys={["customerName", "mobileNumber", "productType", "orderStatus"]}
+          onEdit={handleEdit}
+        />
+      )}
+
+      {editRow && (
+        <EditModal
+          title="Order"
+          fields={orderEditFields}
+          data={editRow}
+          onSave={handleSaveEdit}
+          onClose={() => setEditRow(null)}
         />
       )}
     </section>

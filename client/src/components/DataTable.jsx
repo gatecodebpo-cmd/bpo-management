@@ -6,7 +6,7 @@ const SearchIcon = () => (
   </svg>
 );
 
-const DataTable = ({ title, columns, data, statusOptions = [], onStatusChange, searchKeys = [], showAction = true }) => {
+const DataTable = ({ title, columns, data, statusOptions = [], onStatusChange, searchKeys = [], showAction = true, onEdit }) => {
   const items = Array.isArray(data) ? data : [];
   const [search, setSearch] = useState("");
   const [sortConfig, setSortConfig] = useState({ key: "", direction: "asc" });
@@ -96,14 +96,25 @@ const DataTable = ({ title, columns, data, statusOptions = [], onStatusChange, s
                     </td>
                   ))}
                   {showAction && (
-                    <td style={{ textAlign: "center" }}>
-                      <select
-                        value={row.orderStatus || row.returnStatus}
-                        onChange={(e) => onStatusChange(row._id, e.target.value)}
-                        style={{ minWidth: 130, fontSize: 12, padding: "5px 8px" }}
-                      >
-                        {statusOptions.map((s) => (<option key={s} value={s}>{s}</option>))}
-                      </select>
+                    <td>
+                      <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+                        <select
+                          value={row.orderStatus || row.returnStatus}
+                          onChange={(e) => onStatusChange(row._id, e.target.value)}
+                          style={{ minWidth: 120, fontSize: 12, padding: "5px 8px" }}
+                        >
+                          {statusOptions.map((s) => (<option key={s} value={s}>{s}</option>))}
+                        </select>
+                        {onEdit && (
+                          <button
+                            className="primary-btn"
+                            style={{ padding: "5px 10px", fontSize: 11, background: "#3b82f6" }}
+                            onClick={() => onEdit(row)}
+                          >
+                            Edit
+                          </button>
+                        )}
+                      </div>
                     </td>
                   )}
                 </tr>
