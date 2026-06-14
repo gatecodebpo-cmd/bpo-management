@@ -3,7 +3,8 @@ import {
   createReturnRequest,
   getReturnRequests,
   updateReturn,
-  updateReturnStatus
+  updateReturnStatus,
+  deleteReturn
 } from "../controllers/returnController.js";
 import { protect, adminOnly } from "../middleware/authMiddleware.js";
 import { validateRequest } from "../middleware/validateMiddleware.js";
@@ -18,5 +19,6 @@ router.post("/", protect, createReturnRequestValidator, validateRequest, createR
 router.get("/", protect, adminOnly, getReturnRequests);
 router.put("/:id", protect, adminOnly, updateReturn);
 router.patch("/:id/status", protect, adminOnly, updateReturnStatusValidator, validateRequest, updateReturnStatus);
+router.delete("/:id", protect, adminOnly, deleteReturn);
 
 export default router;

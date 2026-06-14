@@ -226,19 +226,20 @@ const CallingReportPage = () => {
                 <th>TOTAL CALLS</th>
                 <th>CONVERSIONS</th>
                 <th>REVENUE</th>
+                <th>ACTION</th>
               </tr>
             </thead>
             <tbody>
               {loading && (
                 <tr>
-                  <td colSpan={13} style={{ textAlign: "center", padding: 24, color: "var(--text-muted)" }}>
+                  <td colSpan={14} style={{ textAlign: "center", padding: 24, color: "var(--text-muted)" }}>
                     Loading...
                   </td>
                 </tr>
               )}
               {!loading && records.length === 0 && (
                 <tr>
-                  <td colSpan={13} style={{ textAlign: "center", padding: 24, color: "var(--text-muted)" }}>
+                  <td colSpan={14} style={{ textAlign: "center", padding: 24, color: "var(--text-muted)" }}>
                     No calling records found
                   </td>
                 </tr>
@@ -258,6 +259,18 @@ const CallingReportPage = () => {
                   <td style={{ fontWeight: 600 }}>{(r.outgoingCalls || 0) + (r.incomingCalls || 0)}</td>
                   <td>{r.conversionsDone || 0}</td>
                   <td style={{ fontWeight: 600 }}>₹{r.revenueGenerated || 0}</td>
+                  <td>
+                    <button
+                      onClick={async () => {
+                        if (!window.confirm(`Delete calling record from ${formatDate(r.date)}?`)) return;
+                        await api.delete(`/calling-records/${r._id}`);
+                        fetchRecords();
+                      }}
+                      style={{ padding: "4px 10px", fontSize: 11, background: "none", border: "1px solid #ef4444", color: "#ef4444", borderRadius: 6, cursor: "pointer", fontWeight: 500 }}
+                    >
+                      Delete
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>

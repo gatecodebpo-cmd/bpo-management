@@ -150,6 +150,12 @@ const OrderManagePage = () => {
     handleRefresh();
   };
 
+  const handleDelete = async (row) => {
+    if (!window.confirm(`Delete order for "${row.customerName}"? This cannot be undone.`)) return;
+    await api.delete(`/orders/${row._id}`);
+    handleRefresh();
+  };
+
   const handleEdit = (row) => {
     setEditRow(row);
   };
@@ -239,6 +245,7 @@ const OrderManagePage = () => {
           onStatusChange={updateOrderStatus}
           searchKeys={["customerName", "mobileNumber", "productType", "orderStatus", "parcelStatus", "trackingId", "courierCompany"]}
           onEdit={handleEdit}
+          onDelete={handleDelete}
         />
       )}
 

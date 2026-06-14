@@ -116,6 +116,96 @@ export const getEmployeeReturnsHistory = async (req, res, next) => {
   }
 };
 
+export const updateEmployeeOrder = async (req, res, next) => {
+  try {
+    const employeeId = getEmployeeId(req);
+    if (!employeeId) {
+      return res.status(401).json({ message: "Employee context not found" });
+    }
+
+    const order = await Order.findOne({ _id: req.params.id, employeeId });
+    if (!order) {
+      return res.status(404).json({ message: "Order not found or unauthorized" });
+    }
+
+    const allowedFields = [
+      "customerName", "mobileNumber", "fullAddress", "pincode",
+      "productType", "customProductName", "numberOfUnits", "amount",
+      "totalAmount", "advanceAmount", "dateOfOrder", "orderStatus"
+    ];
+    for (const field of allowedFields) {
+      if (req.body[field] !== undefined) order[field] = req.body[field];
+    }
+
+    await order.save();
+    return res.status(200).json({ message: "Order updated successfully", data: order });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const deleteEmployeeOrder = async (req, res, next) => {
+  try {
+    const employeeId = getEmployeeId(req);
+    if (!employeeId) {
+      return res.status(401).json({ message: "Employee context not found" });
+    }
+
+    const order = await Order.findOneAndDelete({ _id: req.params.id, employeeId });
+    if (!order) {
+      return res.status(404).json({ message: "Order not found or unauthorized" });
+    }
+    return res.status(200).json({ message: "Order deleted successfully" });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const updateEmployeeReturn = async (req, res, next) => {
+  try {
+    const employeeId = getEmployeeId(req);
+    if (!employeeId) {
+      return res.status(401).json({ message: "Employee context not found" });
+    }
+
+    const request = await ReturnRequest.findOne({ _id: req.params.id, employeeId });
+    if (!request) {
+      return res.status(404).json({ message: "Return request not found or unauthorized" });
+    }
+
+    const allowedFields = [
+      "customerName", "mobileNumber", "pincode", "productType",
+      "numberOfUnitsReturning", "returnReason", "customReason",
+      "additionalDescription", "returnDate", "returnStatus"
+    ];
+    for (const field of allowedFields) {
+      if (req.body[field] !== undefined) request[field] = req.body[field];
+    }
+
+    await request.save();
+    return res.status(200).json({ message: "Return updated successfully", data: request });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const deleteEmployeeReturn = async (req, res, next) => {
+  try {
+    const employeeId = getEmployeeId(req);
+    if (!employeeId) {
+      return res.status(401).json({ message: "Employee context not found" });
+    }
+
+    const request = await ReturnRequest.findOneAndDelete({ _id: req.params.id, employeeId });
+    if (!request) {
+      return res.status(404).json({ message: "Return request not found or unauthorized" });
+    }
+    return res.status(200).json({ message: "Return request deleted successfully" });
+  } catch (error) {
+    return next(error);
+  }
+};
+
 export const getEmployeeCallingRecords = async (req, res, next) => {
   try {
     const employeeId = getEmployeeId(req);
@@ -182,6 +272,22 @@ export const createEmployeeCallingRecord = async (req, res, next) => {
       message: "Calling record created successfully",
       data: record
     });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const deleteEmployeeCallingRecord = async (req, res, next) => {
+  try {
+    const employeeId = getEmployeeId(req);
+    if (!employeeId) {
+      return res.status(401).json({ message: "Employee context not found" });
+    }
+    const record = await CallingRecord.findOneAndDelete({ _id: req.params.id, employeeId });
+    if (!record) {
+      return res.status(404).json({ message: "Calling record not found or unauthorized" });
+    }
+    return res.status(200).json({ message: "Calling record deleted successfully" });
   } catch (error) {
     return next(error);
   }

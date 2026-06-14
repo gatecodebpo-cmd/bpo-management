@@ -91,6 +91,21 @@ export const updateParcelStatus = async (req, res, next) => {
   }
 };
 
+export const deleteOrder = async (req, res, next) => {
+  try {
+    if (!isDatabaseReady()) {
+      return res.status(503).json({ message: "Database unavailable. Cannot delete order." });
+    }
+    const order = await Order.findByIdAndDelete(req.params.id);
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+    return res.status(200).json({ message: "Order deleted successfully" });
+  } catch (error) {
+    return next(error);
+  }
+};
+
 export const updateOrderStatus = async (req, res, next) => {
   try {
     if (!isDatabaseReady()) {

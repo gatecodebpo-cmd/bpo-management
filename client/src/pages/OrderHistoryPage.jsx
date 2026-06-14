@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { api, toAbsoluteAssetUrl } from "../api/client";
 import DataTable from "../components/DataTable";
 
@@ -94,6 +94,12 @@ const OrderHistoryPage = () => {
     fetchOrders().then((data) => { setOrders(data); setLoading(false); }).catch((e) => { setLoading(false); console.error("Failed to refresh order history:", e); });
   };
 
+  const handleDelete = async (row) => {
+    if (!window.confirm(`Delete order for "${row.customerName}"? This cannot be undone.`)) return;
+    await api.delete(`/orders/${row._id}`);
+    handleRefresh();
+  };
+
   return (
     <section className="admin-page">
       <div className="admin-head">
@@ -114,7 +120,7 @@ const OrderHistoryPage = () => {
           columns={columns}
           data={orders}
           searchKeys={["employeeName", "customerName", "mobileNumber", "productType", "orderStatus", "parcelStatus", "trackingId", "courierCompany"]}
-          showAction={false}
+          onDelete={handleDelete}
         />
       )}
     </section>

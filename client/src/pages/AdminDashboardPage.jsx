@@ -76,153 +76,347 @@ const Sparkline = ({ data, color, height = 44, width = 100 }) => {
   );
 };
 
-const ChartContainer = ({ title, children }) => (
-  <div className="glass-card" style={{ padding: '20px' }}>
-    <div className="section-header" style={{ marginBottom: '16px' }}>
-      <h2 style={{ fontSize: '16px', fontWeight: 600 }}>{title}</h2>
+const chartTheme = {
+  cyan: { accent: '#06b6d4', accentBg: 'rgba(6,182,212,0.08)', light: '#22d3ee', label: '#0891b2' },
+  purple: { accent: '#8b5cf6', accentBg: 'rgba(139,92,246,0.08)', light: '#a78bfa', label: '#7c3aed' },
+  green: { accent: '#10b981', accentBg: 'rgba(16,185,129,0.08)', light: '#34d399', label: '#059669' },
+};
+
+const ChartContainer = ({ children, theme = 'cyan' }) => {
+  const t = chartTheme[theme];
+  return (
+    <div className="glass-card" style={{ padding: 0, overflow: 'hidden', position: 'relative' }}>
+      <div style={{ height: 3, background: `linear-gradient(90deg, ${t.accent}, ${t.light}, ${t.accent})` }} />
+      <div style={{ padding: '16px 20px 18px' }}>
+        {children}
+      </div>
     </div>
-    <div className="chart-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '220px' }}>
-      {children}
+  );
+};
+
+const ChartTooltip = ({ tooltip, color, parentClass }) => {
+  if (!tooltip) return null;
+  const above = tooltip.y > 70;
+  return (
+    <div style={{
+      position: 'absolute', left: tooltip.x,
+      top: above ? tooltip.y : tooltip.y + 20,
+      transform: above ? 'translate(-50%, -100%)' : 'translate(-50%, 0)',
+      marginTop: above ? -14 : 0,
+      background: '#1a2540', padding: '6px 12px', borderRadius: 8,
+      border: `1px solid #2d3e54`, boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+      zIndex: 100, pointerEvents: 'none', textAlign: 'center', minWidth: 60,
+    }}>
+      <div style={{
+        position: 'absolute',
+        [above ? 'bottom' : 'top']: -5,
+        left: '50%',
+        transform: 'translateX(-50%) rotate(45deg)',
+        width: 8, height: 8,
+        background: '#1a2540',
+        borderRight: '1px solid #2d3e54',
+        borderBottom: '1px solid #2d3e54',
+      }} />
+      <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 500, textTransform: 'uppercase', letterSpacing: 0.4 }}>{tooltip.label}</div>
+      <div style={{ fontSize: 14, fontWeight: 700, color, marginTop: 1 }}>{tooltip.val}</div>
     </div>
+  );
+};
+
+const ChartStat = ({ label, value, color }) => (
+  <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: color, padding: '4px 10px', borderRadius: 6 }}>
+    <span style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, color: 'rgba(255,255,255,0.75)' }}>{label}</span>
+    <span style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{value}</span>
   </div>
 );
 
 const OrdersOverviewChart = ({ data = [45, 52, 48, 65, 58, 72, 68, 85] }) => {
-  const width = 700, height = 280, padding = 40;
+  const [tip, setTip] = useState(null);
+  const [hoverIdx, setHoverIdx] = useState(null);
+  const W = 700, H = 260, pad = { t: 32, r: 16, b: 34, l: 40 };
   const max = Math.max(...data, 1), min = Math.min(...data, 0), range = max - min || 1;
-  const stepX = (width - padding - 20) / (data.length - 1);
+  const cw = W - pad.l - pad.r, ch = H - pad.t - pad.b;
   const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const total = data.reduce((a, b) => a + b, 0);
+  const avg = Math.round(total / data.length);
 
-  const points = data.map((v, i) => {
-    const x = padding + i * stepX;
-    const y = height - padding - ((v - min) / range) * (height - padding * 1.5);
-    return `${x},${y}`;
-  }).join(" ");
+  const y = (v) => pad.t + ch - ((v - min) / range) * ch;
+  const x = (i) => pad.l + i * (cw / (data.length - 1));
+  const pts = data.map((v, i) => ({ x: x(i), y: y(v) }));
+  const toC = (pts) => pts.length < 2 ? '' : pts.map((p, i) => i === 0 ? `M ${p.x},${p.y}` : (() => { const prev = pts[i - 1]; const cp = (prev.x + p.x) / 2; return `C ${cp},${prev.y} ${cp},${p.y} ${p.x},${p.y}`; })()).join(' ');
+  const areaPath = toC(pts) + ` L ${pts[pts.length - 1].x},${pad.t + ch} L ${pad.l},${pad.t + ch} Z`;
 
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} style={{ width: "100%", height: "auto" }}>
-      <defs>
-        <linearGradient id="orderGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.2" />
-          <stop offset="100%" stopColor="#06b6d4" stopOpacity="0.01" />
-        </linearGradient>
-      </defs>
-      {[0, 1, 2, 3, 4].map(i => (
-        <line key={`og-${i}`} x1={padding} y1={height - padding - (i * (height - padding * 1.5) / 4)} x2={width} y2={height - padding - (i * (height - padding * 1.5) / 4)} stroke="#e2e8f0" strokeWidth="1" />
-      ))}
-      <line x1={padding} y1={height - padding} x2={padding} y2={padding} stroke="#cbd5e1" strokeWidth="1" />
-      <line x1={padding} y1={height - padding} x2={width} y2={height - padding} stroke="#cbd5e1" strokeWidth="1" />
-      <polyline fill="url(#orderGrad)" stroke="none" points={`${padding},${height - padding} ${points} ${width - 20},${height - padding}`} />
-      <polyline fill="none" stroke="#06b6d4" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" points={points} />
-      {data.map((v, i) => {
-        const x = padding + i * stepX, y = height - padding - ((v - min) / range) * (height - padding * 1.5);
-        return <circle key={`od-${i}`} cx={x} cy={y} r="4" fill="white" stroke="#06b6d4" strokeWidth="2" />;
-      })}
-      {days.slice(0, data.length).map((day, i) => {
-        const x = padding + i * stepX;
-        return <text key={`ol-${i}`} x={x} y={height - 10} textAnchor="middle" fontSize="11" fill="#64748b">{day}</text>;
-      })}
-      {[0, 1, 2, 3, 4].map(i => (
-        <text key={`oy-${i}`} x={padding - 10} y={height - padding - (i * (height - padding * 1.5) / 4) + 4} textAnchor="end" fontSize="11" fill="#64748b">{Math.round(min + (i * range / 4))}</text>
-      ))}
-    </svg>
+    <div style={{ width: '100%' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 34, height: 34, borderRadius: 10, background: 'linear-gradient(135deg, #06b6d4, #0891b2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', boxShadow: '0 2px 8px rgba(6,182,212,0.25)' }}>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"/><path d="M7 16l4-8 4 4 4-6"/></svg>
+          </div>
+          <div>
+            <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#0f172a', lineHeight: 1.3 }}>Orders Overview</h3>
+            <span style={{ fontSize: 11, color: '#64748b' }}>Weekly order distribution</span>
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 20, fontWeight: 800, color: '#06b6d4', letterSpacing: -0.5, lineHeight: 1 }}>{total}</div>
+            <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 500, marginTop: 2 }}>Total</div>
+          </div>
+          <div style={{ width: 1, background: '#e2e8f0' }} />
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 20, fontWeight: 800, color: '#10b981', letterSpacing: -0.5, lineHeight: 1 }}>{avg}</div>
+            <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 500, marginTop: 2 }}>Avg</div>
+          </div>
+        </div>
+      </div>
+      <div style={{ position: 'relative', borderRadius: 12, background: '#1a2540', border: '1px solid #2d3e54', boxShadow: '0 1px 4px rgba(0,0,0,0.2)', overflow: 'hidden' }}>
+        <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', display: 'block' }}>
+          <defs>
+            <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.25" />
+              <stop offset="100%" stopColor="#06b6d4" stopOpacity="0.01" />
+            </linearGradient>
+          </defs>
+          {Array.from({ length: 5 }, (_, i) => {
+            const v = Math.round(min + (i * range / 4));
+            const yy = y(v);
+            return <g key={`g-${i}`}>
+              <line x1={pad.l} y1={yy} x2={W - pad.r} y2={yy} stroke="#f1f5f9" strokeWidth="1" />
+              <text x={pad.l - 8} y={yy + 3} textAnchor="end" style={{ fontSize: 10, fill: '#94a3b8', fontWeight: 500 }}>{v}</text>
+            </g>;
+          })}
+          <path d={areaPath} fill="url(#areaGrad)" />
+          <path d={toC(pts)} fill="none" stroke="#06b6d4" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+          <path d={toC(pts)} fill="none" stroke="#22d3ee" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" opacity="0.5" />
+          {data.map((v, i) => {
+            const xx = x(i), yy = y(v);
+            const hov = hoverIdx === i;
+            return <g key={`p-${i}`}>
+              {hov && <line x1={xx} y1={yy} x2={xx} y2={pad.t + ch} stroke="#06b6d4" strokeWidth="1" opacity="0.12" />}
+              <circle cx={xx} cy={yy} r={hov ? 7 : 3} fill={hov ? '#06b6d4' : '#fff'} stroke="#06b6d4" strokeWidth={hov ? 2.5 : 2}
+                style={{ cursor: 'pointer', transition: 'r .15s,fill .15s,stroke-width .15s' }}
+                onMouseEnter={(e) => { const r = e.currentTarget.closest('[style*="position: relative"]').getBoundingClientRect(); setHoverIdx(i); setTip({ x: e.clientX - r.left, y: e.clientY - r.top, val: `${v} Orders`, label: days[i] }); }}
+                onMouseLeave={() => { setHoverIdx(null); setTip(null); }} />
+              {hov && <circle cx={xx} cy={yy} r="2.5" fill="#fff" style={{ pointerEvents: 'none' }} />}
+            </g>;
+          })}
+          {data.map((v, i) => <text key={`lb-${i}`} x={x(i)} y={H - 10} textAnchor="middle" style={{ fontSize: 10, fill: '#94a3b8', fontWeight: 500 }}>{days[i]}</text>)}
+        </svg>
+        <ChartTooltip tooltip={tip} color="#06b6d4" />
+      </div>
+    </div>
   );
 };
 
 const RevenueTrendChart = ({ data = [45000, 52000, 48000, 65000, 58000, 72000, 68000, 75000] }) => {
-  const width = 700, height = 280, padding = 40;
-  const max = Math.max(...data), min = Math.min(...data), range = max - min || 1;
-  const stepX = (width - padding - 20) / (data.length - 1);
+  const [hoverIdx, setHoverIdx] = useState(null);
+  const W = 700, H = 260, pad = { t: 32, r: 16, b: 34, l: 48 };
+  const max = Math.max(...data, 1);
+  const cw = W - pad.l - pad.r, ch = H - pad.t - pad.b;
   const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-
-  const points = data.map((v, i) => {
-    const x = padding + i * stepX, y = height - padding - ((v - min) / range) * (height - padding * 1.5);
-    return `${x},${y}`;
-  }).join(" ");
+  const total = data.reduce((a, b) => a + b, 0);
+  const avg = Math.round(total / data.length);
+  const growth = data.length > 1 ? Math.round(((data[data.length - 1] - data[0]) / data[0]) * 100) : 0;
 
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} style={{ width: "100%", height: "auto" }}>
-      <defs>
-        <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.35" />
-          <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.02" />
-        </linearGradient>
-      </defs>
-      {[0, 1, 2, 3, 4].map(i => (
-        <line key={`rg-${i}`} x1={padding} y1={height - padding - (i * (height - padding * 1.5) / 4)} x2={width} y2={height - padding - (i * (height - padding * 1.5) / 4)} stroke="#e2e8f0" strokeWidth="1" />
-      ))}
-      <line x1={padding} y1={height - padding} x2={padding} y2={padding} stroke="#cbd5e1" strokeWidth="1" />
-      <line x1={padding} y1={height - padding} x2={width} y2={height - padding} stroke="#cbd5e1" strokeWidth="1" />
-      <polyline fill="url(#revGrad)" stroke="none" points={`${padding},${height - padding} ${points} ${width - 20},${height - padding}`} />
-      <polyline fill="none" stroke="#8b5cf6" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" points={points} />
-      {data.map((v, i) => {
-        const x = padding + i * stepX, y = height - padding - ((v - min) / range) * (height - padding * 1.5);
-        return <circle key={`rd-${i}`} cx={x} cy={y} r="4" fill="#8b5cf6" stroke="white" strokeWidth="2" />;
-      })}
-      {days.slice(0, data.length).map((day, i) => {
-        const x = padding + i * stepX;
-        return <text key={`rl-${i}`} x={x} y={height - 10} textAnchor="middle" fontSize="11" fill="#64748b">{day}</text>;
-      })}
-      {[0, 1, 2, 3, 4].map(i => (
-        <text key={`ry-${i}`} x={padding - 10} y={height - padding - (i * (height - padding * 1.5) / 4) + 4} textAnchor="end" fontSize="11" fill="#64748b">₹{(Math.round(min + (i * range / 4)) / 1000).toFixed(0)}k</text>
-      ))}
-    </svg>
+    <div style={{ width: '100%' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 34, height: 34, borderRadius: 10, background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', boxShadow: '0 2px 8px rgba(139,92,246,0.25)' }}>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+          </div>
+          <div>
+            <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#0f172a', lineHeight: 1.3 }}>Revenue Trend</h3>
+            <span style={{ fontSize: 11, color: '#64748b' }}>Weekly revenue performance</span>
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 20, fontWeight: 800, color: '#8b5cf6', letterSpacing: -0.5, lineHeight: 1 }}>₹{(total / 1000).toFixed(0)}k</div>
+            <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 500, marginTop: 2 }}>Total</div>
+          </div>
+          <div style={{ textAlign: 'center', padding: '2px 8px', borderRadius: 6, background: growth >= 0 ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)' }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: growth >= 0 ? '#10b981' : '#ef4444', lineHeight: 1 }}>{growth >= 0 ? '+' : ''}{growth}%</div>
+            <div style={{ fontSize: 9, color: '#94a3b8', fontWeight: 500, marginTop: 1 }}>Growth</div>
+          </div>
+        </div>
+      </div>
+      <div style={{ position: 'relative', borderRadius: 12, background: '#1a2540', border: '1px solid #2d3e54', boxShadow: '0 1px 4px rgba(0,0,0,0.2)', overflow: 'hidden' }}>
+        <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', display: 'block' }}>
+          <defs>
+            <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#8b5cf6" />
+              <stop offset="100%" stopColor="#a78bfa" />
+            </linearGradient>
+          </defs>
+          {Array.from({ length: 5 }, (_, i) => {
+            const v = Math.round(max * i / 4);
+            const yy = pad.t + ch - (v / max) * ch;
+            return <g key={`g-${i}`}>
+              <line x1={pad.l} y1={yy} x2={W - pad.r} y2={yy} stroke="#f1f5f9" strokeWidth="1" />
+              <text x={pad.l - 8} y={yy + 3} textAnchor="end" style={{ fontSize: 10, fill: '#94a3b8', fontWeight: 500 }}>₹{(v / 1000).toFixed(0)}k</text>
+            </g>;
+          })}
+          {data.map((v, i) => {
+            const barW = cw / data.length - 6;
+            const xx = pad.l + i * (cw / data.length) + 3;
+            const barH = (v / max) * ch;
+            const yy = pad.t + ch - barH;
+            const hov = hoverIdx === i;
+            return <g key={`b-${i}`}>
+              <rect x={xx} y={yy} width={barW} height={barH} rx={4}
+                fill={hov ? '#6d28d9' : 'url(#barGrad)'} opacity={hov ? 1 : 0.85}
+                style={{ cursor: 'pointer', transition: 'opacity .15s' }}
+                onMouseEnter={() => setHoverIdx(i)} onMouseLeave={() => setHoverIdx(null)} />
+              {hov && <rect x={xx - 2} y={yy - 2} width={barW + 4} height={barH + 2} rx={5} fill="none" stroke="#8b5cf6" strokeWidth="1.5" opacity="0.4" />}
+              {hov && <text x={xx + barW / 2} y={yy - 8} textAnchor="middle" style={{ fontSize: 11, fill: '#4c1d95', fontWeight: 700 }}>₹{(v / 1000).toFixed(1)}k</text>}
+              <text x={xx + barW / 2} y={H - 10} textAnchor="middle" style={{ fontSize: 10, fill: hoverIdx === i ? '#4c1d95' : '#94a3b8', fontWeight: hoverIdx === i ? 600 : 500, transition: 'fill .15s' }}>{days[i]}</text>
+            </g>;
+          })}
+        </svg>
+      </div>
+    </div>
   );
 };
 
 const BarChart = ({ data = [30, 45, 38, 52, 48, 60, 55, 70, 62, 75, 80, 90] }) => {
-  const width = 700, height = 280, padding = 40;
-  const max = Math.max(...data, 1);
-  const barWidth = (width - padding - 20) / data.length - 4;
+  const [tip, setTip] = useState(null);
+  const [hoverIdx, setHoverIdx] = useState(null);
+  const W = 700, H = 260, pad = { t: 32, r: 16, b: 34, l: 40 };
+  const max = Math.max(...data, 1), min = Math.min(...data, 0), range = max - min || 1;
+  const cw = W - pad.l - pad.r, ch = H - pad.t - pad.b;
   const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const total = data.reduce((a, b) => a + b, 0);
+
+  const y = (v) => pad.t + ch - ((v - min) / range) * ch;
+  const x = (i) => pad.l + i * (cw / (data.length - 1));
+  const pts = data.map((v, i) => ({ x: x(i), y: y(v) }));
+  const toC = (pts) => pts.length < 2 ? '' : pts.map((p, i) => i === 0 ? `M ${p.x},${p.y}` : (() => { const prev = pts[i - 1]; const cp = (prev.x + p.x) / 2; return `C ${cp},${prev.y} ${cp},${p.y} ${p.x},${p.y}`; })()).join(' ');
 
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} style={{ width: "100%", height: "auto" }}>
-      {[0, 1, 2, 3, 4].map(i => (
-        <line key={`bg-${i}`} x1={padding} y1={height - padding - (i * (height - padding * 1.5) / 4)} x2={width} y2={height - padding - (i * (height - padding * 1.5) / 4)} stroke="#e2e8f0" strokeWidth="1" />
-      ))}
-      <line x1={padding} y1={height - padding} x2={width} y2={height - padding} stroke="#cbd5e1" strokeWidth="1" />
-      <line x1={padding} y1={height - padding} x2={padding} y2={padding} stroke="#cbd5e1" strokeWidth="1" />
-      {data.map((v, i) => {
-        const x = padding + i * (barWidth + 4) + 2;
-        const barH = (v / max) * (height - padding * 1.5);
-        return (
-          <g key={`b-${i}`}>
-            <rect x={x} y={height - padding - barH} width={barWidth} height={barH} rx="3" fill="#10b981" opacity="0.85" />
-            {i % 2 === 0 && months[i] && (
-              <text x={x + barWidth / 2} y={height - 10} textAnchor="middle" fontSize="10" fill="#64748b">{months[i]}</text>
-            )}
-          </g>
-        );
-      })}
-      {[0, 1, 2, 3, 4].map(i => (
-        <text key={`by-${i}`} x={padding - 10} y={height - padding - (i * (height - padding * 1.5) / 4) + 4} textAnchor="end" fontSize="11" fill="#64748b">{Math.round(max * i / 4)}</text>
-      ))}
-    </svg>
+    <div style={{ width: '100%' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 34, height: 34, borderRadius: 10, background: 'linear-gradient(135deg, #10b981, #047857)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', boxShadow: '0 2px 8px rgba(16,185,129,0.25)' }}>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          </div>
+          <div>
+            <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#0f172a', lineHeight: 1.3 }}>Monthly Sales</h3>
+            <span style={{ fontSize: 11, color: '#64748b' }}>Sales trends across months</span>
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 20, fontWeight: 800, color: '#10b981', letterSpacing: -0.5, lineHeight: 1 }}>{total}</div>
+            <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 500, marginTop: 2 }}>Total</div>
+          </div>
+          <div style={{ width: 1, background: '#e2e8f0' }} />
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 20, fontWeight: 800, color: '#f59e0b', letterSpacing: -0.5, lineHeight: 1 }}>{Math.max(...data)}</div>
+            <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 500, marginTop: 2 }}>Peak</div>
+          </div>
+        </div>
+      </div>
+      <div style={{ position: 'relative', borderRadius: 12, background: '#1a2540', border: '1px solid #2d3e54', boxShadow: '0 1px 4px rgba(0,0,0,0.2)', overflow: 'hidden' }}>
+        <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', display: 'block' }}>
+          <defs>
+            <linearGradient id="salesGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#10b981" stopOpacity="0.2" />
+              <stop offset="100%" stopColor="#10b981" stopOpacity="0.01" />
+            </linearGradient>
+          </defs>
+          {Array.from({ length: 5 }, (_, i) => {
+            const v = Math.round(min + (i * range / 4));
+            const yy = y(v);
+            return <g key={`g-${i}`}>
+              <line x1={pad.l} y1={yy} x2={W - pad.r} y2={yy} stroke="#f1f5f9" strokeWidth="1" />
+              <text x={pad.l - 8} y={yy + 3} textAnchor="end" style={{ fontSize: 10, fill: '#94a3b8', fontWeight: 500 }}>{v}</text>
+            </g>;
+          })}
+          <line x1={pad.l} y1={pad.t + ch} x2={W - pad.r} y2={pad.t + ch} stroke="#e2e8f0" strokeWidth="1" />
+          <path d={toC(pts)} fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+          <path d={toC(pts)} fill="none" stroke="#34d399" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" opacity="0.5" />
+          {data.map((v, i) => {
+            const xx = x(i), yy = y(v);
+            const hov = hoverIdx === i;
+            return <g key={`p-${i}`}>
+              {hov && <line x1={xx} y1={yy} x2={xx} y2={pad.t + ch} stroke="#10b981" strokeWidth="1" opacity="0.12" />}
+              <circle cx={xx} cy={yy} r={hov ? 7 : 3.5} fill={hov ? '#10b981' : '#fff'} stroke="#10b981" strokeWidth={hov ? 2.5 : 2}
+                style={{ cursor: 'pointer', transition: 'r .15s,fill .15s,stroke-width .15s' }}
+                onMouseEnter={(e) => { const r = e.currentTarget.closest('[style*="position: relative"]').getBoundingClientRect(); setHoverIdx(i); setTip({ x: e.clientX - r.left, y: e.clientY - r.top, val: `${v} Orders`, label: months[i] }); }}
+                onMouseLeave={() => { setHoverIdx(null); setTip(null); }} />
+              {hov && <circle cx={xx} cy={yy} r="2.5" fill="#fff" style={{ pointerEvents: 'none' }} />}
+              {i % 2 === 0 && <text x={xx} y={H - 10} textAnchor="middle" style={{ fontSize: 10, fill: '#94a3b8', fontWeight: 500 }}>{months[i]}</text>}
+            </g>;
+          })}
+        </svg>
+        <ChartTooltip tooltip={tip} color="#10b981" />
+      </div>
+    </div>
   );
 };
 
 const DoughnutChart = ({ pending = 120, processing = 200, delivered = 50, cancelled = 30 }) => {
   const total = pending + processing + delivered + cancelled;
-  const pendingPercent = (pending / total) * 100;
-  const processingPercent = (processing / total) * 100;
-  const deliveredPercent = (delivered / total) * 100;
+  const t = chartTheme.green;
+  const items = [
+    { label: 'Delivered', value: delivered, color: '#10b981' },
+    { label: 'Processing', value: processing, color: '#06b6d4' },
+    { label: 'Pending', value: pending, color: '#f59e0b' },
+    { label: 'Cancelled', value: cancelled, color: '#ef4444' },
+  ];
+
+  let offset = 0;
+  const circumference = 2 * Math.PI * 42;
 
   return (
-    <div className="doughnut-chart">
-      <svg viewBox="0 0 120 120" width="200" height="200">
-        <circle cx="60" cy="60" r="50" fill="none" stroke="#10b981" strokeWidth="8"
-          strokeDasharray={`${(deliveredPercent / 100) * 314} 314`} />
-        <circle cx="60" cy="60" r="50" fill="none" stroke="#06b6d4" strokeWidth="8"
-          strokeDasharray={`${(processingPercent / 100) * 314} 314`} strokeDashoffset={-((deliveredPercent / 100) * 314)} />
-        <circle cx="60" cy="60" r="50" fill="none" stroke="#f59e0b" strokeWidth="8"
-          strokeDasharray={`${(pendingPercent / 100) * 314} 314`} strokeDashoffset={-((deliveredPercent + processingPercent) / 100) * 314} />
-        <circle cx="60" cy="60" r="50" fill="none" stroke="#ef4444" strokeWidth="8"
-          strokeDasharray={`${((100 - deliveredPercent - processingPercent - pendingPercent) / 100) * 314} 314`}
-          strokeDashoffset={-((deliveredPercent + processingPercent + pendingPercent) / 100) * 314} />
-        <circle cx="60" cy="60" r="38" fill="white" />
-        <text x="60" y="65" textAnchor="middle" className="doughnut-text">{total}</text>
-      </svg>
+    <div style={{ width: '100%' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, background: '#f59e0b', display: 'inline-block' }}></span>
+          <h4 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--text-heading)' }}>Order Status</h4>
+          <span style={{ fontSize: 9, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, padding: '2px 8px', borderRadius: 20, background: t.accentBg, color: t.accent, border: `1px solid ${t.accent}30` }}>Donut Chart</span>
+        </div>
+        <div style={{ fontSize: 11, color: '#64748b', fontWeight: 600 }}>
+          <span>{total} total</span>
+        </div>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+        <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <svg viewBox="0 0 120 120" width="160" height="160" style={{ display: 'block' }}>
+            <circle cx="60" cy="60" r="42" fill="none" stroke="#f1f5f9" strokeWidth="10" />
+            {items.map((item) => {
+              const dash = (item.value / total) * circumference;
+              const dashOffset = -offset;
+              offset += dash;
+              if (item.value === 0) return null;
+              return (
+                <circle key={item.label} cx="60" cy="60" r="42" fill="none" stroke={item.color} strokeWidth="10"
+                  strokeLinecap="round"
+                  strokeDasharray={`${dash} ${circumference - dash}`}
+                  strokeDashoffset={dashOffset}
+                  transform="rotate(-90 60 60)"
+                  style={{ transition: 'stroke-dasharray 0.5s ease' }}
+                />
+              );
+            })}
+            <circle cx="60" cy="60" r="30" fill="#ffffff" />
+            <text x="60" y="56" textAnchor="middle" style={{ fontSize: 18, fontWeight: 800, fill: '#0f172a', fontFamily: 'Inter, system-ui, sans-serif' }}>{total}</text>
+            <text x="60" y="70" textAnchor="middle" style={{ fontSize: 9, fill: '#94a3b8', fontFamily: 'Inter, system-ui, sans-serif', fontWeight: 500, textTransform: 'uppercase', letterSpacing: 0.5 }}>Total</text>
+          </svg>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: 1 }}>
+          {items.map((item) => (
+            <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--text)', padding: '4px 0' }}>
+              <span style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, background: item.color, display: 'inline-block' }}></span>
+              <span style={{ flex: 1, fontWeight: 500, color: 'var(--text-heading)' }}>{item.label}</span>
+              <span style={{ fontWeight: 700, color: 'var(--text-heading)', minWidth: 24, textAlign: 'right' }}>{item.value}</span>
+              <span style={{ fontSize: 11, color: '#64748b', fontWeight: 500, minWidth: 40, textAlign: 'right' }}>{total > 0 ? ((item.value / total) * 100).toFixed(1) : '0'}%</span>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 };
@@ -354,9 +548,9 @@ const AdminDashboardPage = () => {
     orders.forEach(o => {
       const date = new Date(o.createdAt);
       const day = date.getDay();
-      daily[day]++;
+      daily[day === 0 ? 6 : day - 1]++;
     });
-    return daily.map(d => Math.max(d, 10));
+    return daily;
   }, [orders]);
 
   const chartRevenueDaily = useMemo(() => {
@@ -364,9 +558,9 @@ const AdminDashboardPage = () => {
     orders.forEach(o => {
       const date = new Date(o.createdAt);
       const day = date.getDay();
-      daily[day] += o.totalAmount || 0;
+      daily[day === 0 ? 6 : day - 1] += o.totalAmount || 0;
     });
-    return daily.map(d => Math.max(d, 20000));
+    return daily;
   }, [orders]);
 
   const pendingCount = useMemo(() => orders.filter(o => o.orderStatus === "Pending").length, [orders]);
@@ -381,7 +575,7 @@ const AdminDashboardPage = () => {
       const month = date.getMonth();
       monthly[month]++;
     });
-    return monthly.map(m => Math.max(m, 15));
+    return monthly;
   }, [orders]);
 
   return (
@@ -410,49 +604,22 @@ const AdminDashboardPage = () => {
         ))}
       </div>
 
-      <div className="dashboard-section-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
-        <ChartContainer title="Orders Overview (Line Chart)">
+      <div className="dashboard-section-grid">
+        <ChartContainer theme="cyan">
           <OrdersOverviewChart data={chartOrdersDaily} />
         </ChartContainer>
-        <ChartContainer title="Revenue Trend (Area Chart)">
+        <ChartContainer theme="purple">
           <RevenueTrendChart data={chartRevenueDaily} />
         </ChartContainer>
-        <div className="order-status-card glass-card" style={{ padding: '20px' }}>
-          <div className="section-header" style={{ marginBottom: '16px' }}>
-            <h2 style={{ fontSize: '16px', fontWeight: 600 }}>Order Status Distribution (Donut Chart)</h2>
-          </div>
-          <div className="status-content">
-            <DoughnutChart
-              pending={pendingCount}
-              processing={processingCount}
-              delivered={deliveredCount}
-              cancelled={cancelledCount}
-            />
-            <div className="status-legend">
-              <div className="legend-item">
-                <span className="legend-dot delivered"></span>
-                <span>Delivered</span>
-                <span className="legend-count">{summary.deliveredOrders} ({totalStatusCount > 0 ? ((summary.deliveredOrders / totalStatusCount) * 100).toFixed(1) : '0'}%)</span>
-              </div>
-              <div className="legend-item">
-                <span className="legend-dot processing"></span>
-                <span>Processing</span>
-                <span className="legend-count">{summary.processingOrders} ({totalStatusCount > 0 ? ((summary.processingOrders / totalStatusCount) * 100).toFixed(1) : '0'}%)</span>
-              </div>
-              <div className="legend-item">
-                <span className="legend-dot pending"></span>
-                <span>Pending</span>
-                <span className="legend-count">{summary.pendingOrders} ({totalStatusCount > 0 ? ((summary.pendingOrders / totalStatusCount) * 100).toFixed(1) : '0'}%)</span>
-              </div>
-              <div className="legend-item">
-                <span className="legend-dot cancelled"></span>
-                <span>Cancelled</span>
-                <span className="legend-count">{summary.cancelledOrders} ({totalStatusCount > 0 ? ((summary.cancelledOrders / totalStatusCount) * 100).toFixed(1) : '0'}%)</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <ChartContainer title="Monthly Sales (Bar Chart)">
+        <ChartContainer theme="green">
+          <DoughnutChart
+            pending={pendingCount}
+            processing={processingCount}
+            delivered={deliveredCount}
+            cancelled={cancelledCount}
+          />
+        </ChartContainer>
+        <ChartContainer theme="purple">
           <BarChart data={chartMonthlySales} />
         </ChartContainer>
       </div>

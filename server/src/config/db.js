@@ -17,12 +17,15 @@ const sanitizeMongoUri = (uri) => {
   return uri;
 };
 
-export const connectDB = async () => {
+export const connectDB = async (timeoutMs = 10000) => {
   const rawUri = process.env.MONGO_URI;
   if (!rawUri) {
     throw new Error("MONGO_URI is missing in environment variables.");
   }
   const mongoUri = sanitizeMongoUri(rawUri);
-  await mongoose.connect(mongoUri, { serverSelectionTimeoutMS: 5000 });
+  await Promise.race([
+    mongoose.connect(mongoUri, { serverSelectionTimeoutMS: 5000, connectTimeoutMS: 5000 }),
+    new Promise((_, reject) => setTimeout(() => reject(new Error("MongoDB connection timed out")), timeoutMs))
+  ]);
   console.log("MongoDB connected");
 };

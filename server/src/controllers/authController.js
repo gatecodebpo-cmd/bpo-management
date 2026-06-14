@@ -177,15 +177,16 @@ export const loginAdmin = async (req, res, next) => {
       });
     }
 
-    const user = await User.findOne({ email });
+    const normalizedEmail = email.toLowerCase().trim();
+    const user = await User.findOne({ email: normalizedEmail });
     if (user) {
       const ok = await bcrypt.compare(password, user.password);
       if (!ok) {
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
-      const adminEmail = process.env.ADMIN_EMAIL || "uttam306115@gmail.com";
-      const userRole = user.email === adminEmail ? "admin" : user.role;
+      const adminEmail = (process.env.ADMIN_EMAIL || "uttam306115@gmail.com").toLowerCase();
+      const userRole = user.email.toLowerCase() === adminEmail ? "admin" : user.role;
 
       if (role === "admin" && userRole !== "admin") {
         return res.status(403).json({ message: "Only Admin users can login here." });
@@ -201,12 +202,12 @@ export const loginAdmin = async (req, res, next) => {
       });
     }
 
-    if (!isFixedAdminCredentials(email, password)) {
-      return res.status(401).json({ message: "Invalid credentials" });
+    if (role === "employee") {
+      return res.status(401).json({ message: "Employee not found. Please contact admin to create your account." });
     }
 
-    if (role === "employee") {
-      return res.status(403).json({ message: "Only Employee users can login here." });
+    if (!isFixedAdminCredentials(email.toLowerCase().trim(), password)) {
+      return res.status(401).json({ message: "Invalid credentials" });
     }
 
     const adminUser = getFixedAdminUser();

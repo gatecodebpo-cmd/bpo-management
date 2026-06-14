@@ -1,1 +1,5 @@
-◇ injected env (7) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+◇ injected env (7) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+MongoDB connected
+Fixed admin user ready: uttam306115@gmail.com
+Fixed employee user ready: karan2001@gmail.com
+Server running on port 5000

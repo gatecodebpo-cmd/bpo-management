@@ -55,6 +55,21 @@ export const updateReturn = async (req, res, next) => {
   }
 };
 
+export const deleteReturn = async (req, res, next) => {
+  try {
+    if (!isDatabaseReady()) {
+      return res.status(503).json({ message: "Database unavailable. Cannot delete return." });
+    }
+    const request = await ReturnRequest.findByIdAndDelete(req.params.id);
+    if (!request) {
+      return res.status(404).json({ message: "Return request not found" });
+    }
+    return res.status(200).json({ message: "Return request deleted successfully" });
+  } catch (error) {
+    return next(error);
+  }
+};
+
 export const updateReturnStatus = async (req, res, next) => {
   try {
     if (!isDatabaseReady()) {

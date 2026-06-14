@@ -134,6 +134,12 @@ const ReturnManagePage = () => {
     handleRefresh();
   };
 
+  const handleDelete = async (row) => {
+    if (!window.confirm(`Delete return request for "${row.customerName}"? This cannot be undone.`)) return;
+    await api.delete(`/returns/${row._id}`);
+    handleRefresh();
+  };
+
   const handleEdit = (row) => {
     setEditRow(row);
   };
@@ -176,6 +182,7 @@ const ReturnManagePage = () => {
           onStatusChange={updateReturnStatus}
           searchKeys={["customerName", "mobileNumber", "productType", "returnStatus"]}
           onEdit={handleEdit}
+          onDelete={handleDelete}
         />
       )}
 

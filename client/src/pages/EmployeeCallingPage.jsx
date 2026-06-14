@@ -325,13 +325,25 @@ const EmployeeCallingPage = () => {
                   <td>{r.conversionsDone || 0}</td>
                   <td style={{ fontWeight: 600 }}>₹{r.revenueGenerated || 0}</td>
                   <td>
-                    <button
-                      onClick={() => handleEdit(r)}
-                      className="primary-btn"
-                      style={{ padding: "4px 12px", fontSize: 12 }}
-                    >
-                      Edit
-                    </button>
+                    <div style={{ display: "flex", gap: 6 }}>
+                      <button
+                        onClick={() => handleEdit(r)}
+                        className="primary-btn"
+                        style={{ padding: "4px 12px", fontSize: 12 }}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={async () => {
+                          if (!window.confirm(`Delete calling record from ${formatDate(r.date)}?`)) return;
+                          await api.delete(`/employee/calling-records/${r._id}`);
+                          fetchRecords();
+                        }}
+                        style={{ padding: "4px 10px", fontSize: 11, background: "none", border: "1px solid #ef4444", color: "#ef4444", borderRadius: 6, cursor: "pointer", fontWeight: 500 }}
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

@@ -6,7 +6,7 @@ const SearchIcon = () => (
   </svg>
 );
 
-const DataTable = ({ title, columns, data, statusOptions = [], onStatusChange, searchKeys = [], showAction = true, onEdit }) => {
+const DataTable = ({ title, columns, data, statusOptions = [], onStatusChange, searchKeys = [], showAction = true, onEdit, onDelete }) => {
   const items = Array.isArray(data) ? data : [];
   const [search, setSearch] = useState("");
   const [sortConfig, setSortConfig] = useState({ key: "", direction: "asc" });
@@ -112,6 +112,14 @@ const DataTable = ({ title, columns, data, statusOptions = [], onStatusChange, s
                             onClick={() => onEdit(row)}
                           >
                             Edit
+                          </button>
+                        )}
+                        {onDelete && (
+                          <button
+                            style={{ padding: "5px 10px", fontSize: 11, background: "none", border: "1px solid #ef4444", color: "#ef4444", borderRadius: 6, cursor: "pointer", fontWeight: 500 }}
+                            onClick={() => onDelete(row)}
+                          >
+                            Delete
                           </button>
                         )}
                       </div>

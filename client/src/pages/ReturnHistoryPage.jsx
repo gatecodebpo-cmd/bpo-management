@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { api } from "../api/client";
 import DataTable from "../components/DataTable";
 
@@ -67,6 +67,12 @@ const ReturnHistoryPage = () => {
     fetchReturns().then((data) => { setReturns(data); setLoading(false); }).catch((e) => { setLoading(false); console.error("Failed to refresh return history:", e); });
   };
 
+  const handleDelete = async (row) => {
+    if (!window.confirm(`Delete return request for "${row.customerName}"? This cannot be undone.`)) return;
+    await api.delete(`/returns/${row._id}`);
+    handleRefresh();
+  };
+
   return (
     <section className="admin-page">
       <div className="admin-head">
@@ -87,7 +93,7 @@ const ReturnHistoryPage = () => {
           columns={columns}
           data={returns}
           searchKeys={["employeeName", "customerName", "mobileNumber", "productType", "returnStatus"]}
-          showAction={false}
+          onDelete={handleDelete}
         />
       )}
     </section>

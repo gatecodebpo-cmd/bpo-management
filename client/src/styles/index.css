@@ -1365,20 +1365,6 @@ tbody tr:hover td {
   background: rgba(56, 132, 255, 0.25);
 }
 
-/* ─── Dashboard Section Grid ─── */
-.dashboard-section-grid {
-  display: grid;
-  grid-template-columns: 1.5fr 1fr;
-  gap: 24px;
-  margin-bottom: 32px;
-  width: 100%;
-}
-
-.revenue-card,
-.order-status-card {
-  padding: 28px;
-}
-
 .section-header {
   display: flex;
   justify-content: space-between;
@@ -1413,81 +1399,15 @@ tbody tr:hover td {
   min-height: 250px;
 }
 
-/* ─── Order Status / Doughnut ─── */
-.order-status-card {
-  display: flex;
-  flex-direction: column;
-}
+/* ─── No extra chart CSS needed — all inline now ─── */
 
-.order-status-card h2 {
-  margin: 0 0 20px;
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--text-heading);
-}
-
-.status-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+/* ─── Dashboard Section Grid ─── */
+.dashboard-section-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 24px;
-}
-
-.doughnut-chart {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.doughnut-text {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--text-heading);
-}
-
-.status-legend {
+  margin-bottom: 32px;
   width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  color: var(--text);
-}
-
-.legend-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.legend-dot.delivered {
-  background: #22c55e;
-}
-
-.legend-dot.processing {
-  background: #3b82f6;
-}
-
-.legend-dot.pending {
-  background: #f59e0b;
-}
-
-.legend-dot.cancelled {
-  background: #ef4444;
-}
-
-.legend-count {
-  margin-left: auto;
-  font-size: 12px;
-  color: var(--text);
-  font-weight: 500;
 }
 
 /* ─── Order Table ─── */
