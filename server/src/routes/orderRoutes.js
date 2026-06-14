@@ -1,9 +1,9 @@
 import express from "express";
-import { createOrder, getOrders, updateOrder, updateOrderStatus } from "../controllers/orderController.js";
+import { createOrder, getOrders, updateOrder, updateOrderStatus, updateParcelStatus } from "../controllers/orderController.js";
 import { protect, adminOnly } from "../middleware/authMiddleware.js";
 import { uploadPaymentScreenshot } from "../middleware/uploadMiddleware.js";
 import { validateRequest } from "../middleware/validateMiddleware.js";
-import { createOrderValidator, updateOrderStatusValidator } from "../validators/orderValidators.js";
+import { createOrderValidator, updateOrderStatusValidator, updateParcelStatusValidator } from "../validators/orderValidators.js";
 
 const router = express.Router();
 
@@ -11,5 +11,6 @@ router.post("/", protect, uploadPaymentScreenshot, createOrderValidator, validat
 router.get("/", protect, adminOnly, getOrders);
 router.put("/:id", protect, adminOnly, updateOrder);
 router.patch("/:id/status", protect, adminOnly, updateOrderStatusValidator, validateRequest, updateOrderStatus);
+router.patch("/:id/parcel-status", protect, adminOnly, updateParcelStatusValidator, validateRequest, updateParcelStatus);
 
 export default router;

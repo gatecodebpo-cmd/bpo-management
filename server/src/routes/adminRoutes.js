@@ -4,11 +4,15 @@ import {
   getEmployeePerformance,
   getEmployeeHistory,
   getEmployeeDetails,
-  getEmployeeSummary
+  getEmployeeSummary,
+  getRevenueSummary,
+  getSalesSummary
 } from "../controllers/adminController.js";
 
 const router = express.Router();
 
+router.get("/revenue-summary", protect, adminOnly, getRevenueSummary);
+router.get("/sales-summary", protect, adminOnly, getSalesSummary);
 router.get("/employee-performance", protect, adminOnly, getEmployeePerformance);
 router.get("/employee-history", protect, adminOnly, getEmployeeHistory);
 router.get("/employee-summary", protect, adminOnly, getEmployeeSummary);

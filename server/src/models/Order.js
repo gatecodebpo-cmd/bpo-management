@@ -24,7 +24,14 @@ const orderSchema = new mongoose.Schema(
       type: String,
       enum: ["Pending", "Approved", "Processing", "Delivered", "Cancelled"],
       default: "Pending"
-    }
+    },
+    parcelStatus: {
+      type: String,
+      enum: ["Pending", "Process", "Parcel", "Packed", "Dispatched", "Delivered"],
+      default: "Pending"
+    },
+    trackingId: { type: String, default: "" },
+    courierCompany: { type: String, default: "" }
   },
   { timestamps: true }
 );

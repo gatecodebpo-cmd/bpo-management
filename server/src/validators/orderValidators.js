@@ -2,6 +2,7 @@ import { body } from "express-validator";
 
 const productTypes = ["GPS", "Vending Machine", "Disposal", "Other"];
 const orderStatuses = ["Pending", "Approved", "Processing", "Delivered", "Cancelled"];
+const parcelStatuses = ["Pending", "Process", "Parcel", "Packed", "Dispatched", "Delivered"];
 
 export const createOrderValidator = [
   body("customerName").trim().notEmpty().withMessage("Customer name is required"),
@@ -37,4 +38,10 @@ export const createOrderValidator = [
 
 export const updateOrderStatusValidator = [
   body("orderStatus").isIn(orderStatuses).withMessage("Invalid order status")
+];
+
+export const updateParcelStatusValidator = [
+  body("parcelStatus").isIn(parcelStatuses).withMessage("Invalid parcel status"),
+  body("trackingId").optional().trim().isString(),
+  body("courierCompany").optional().trim().isString()
 ];

@@ -18,7 +18,7 @@ const DataTable = ({ title, columns, data, statusOptions = [], onStatusChange, s
     let list = [...items];
     if (statusFilter) {
       list = list.filter((item) =>
-        (item.orderStatus || item.returnStatus || "").toLowerCase() === statusFilter.toLowerCase()
+        (item.orderStatus || item.returnStatus || item.parcelStatus || "").toLowerCase() === statusFilter.toLowerCase()
       );
     }
     if (search.trim()) {

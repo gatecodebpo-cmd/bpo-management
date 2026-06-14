@@ -31,6 +31,22 @@ const statusBadge = (status) => {
   );
 };
 
+const parcelBadge = (status) => {
+  const colors = {
+    "Pending": "var(--warning)", "Process": "#8b5cf6",
+    "Parcel": "var(--primary)", "Packed": "#f59e0b",
+    "Dispatched": "#3b82f6", "Delivered": "var(--success)",
+  };
+  return (
+    <span style={{
+      display: "inline-block", padding: "3px 10px", borderRadius: 20, fontSize: 11,
+      fontWeight: 600, background: `${colors[status] || "#666"}22`,
+      color: colors[status] || "#666", border: `1px solid ${colors[status] || "#666"}44`,
+      whiteSpace: "nowrap",
+    }}>{status}</span>
+  );
+};
+
 const columns = [
   { key: "employeeName", label: "Employee", render: (row) => row.employeeName || "-" },
   { key: "customerName", label: "Customer" },
@@ -51,6 +67,9 @@ const columns = [
   },
   { key: "createdAt", label: "Date", render: (row) => formatDateTime(row.createdAt) },
   { key: "orderStatus", label: "Status", render: (row) => statusBadge(row.orderStatus) },
+  { key: "parcelStatus", label: "Parcel", render: (row) => parcelBadge(row.parcelStatus) },
+  { key: "trackingId", label: "Tracking ID", render: (row) => row.trackingId || "-" },
+  { key: "courierCompany", label: "Courier", render: (row) => row.courierCompany || "-" },
 ];
 
 const fetchOrders = async () => {
@@ -94,7 +113,7 @@ const OrderHistoryPage = () => {
           title="Orders"
           columns={columns}
           data={orders}
-          searchKeys={["employeeName", "customerName", "mobileNumber", "productType", "orderStatus"]}
+          searchKeys={["employeeName", "customerName", "mobileNumber", "productType", "orderStatus", "parcelStatus", "trackingId", "courierCompany"]}
           showAction={false}
         />
       )}

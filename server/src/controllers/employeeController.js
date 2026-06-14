@@ -17,6 +17,45 @@ const endOfDay = () => {
 const getEmployeeId = (req) => req.user?._id || req.user?.id;
 const getEmployeeName = (req) => req.user?.name || "Employee";
 
+const getDateRange = (filter, startDate, endDate) => {
+  const now = new Date();
+  let start, end;
+
+  switch (filter) {
+    case "yesterday": {
+      start = new Date(now);
+      start.setDate(start.getDate() - 1);
+      start.setHours(0, 0, 0, 0);
+      end = new Date(start);
+      end.setHours(23, 59, 59, 999);
+      break;
+    }
+    case "month": {
+      start = new Date(now.getFullYear(), now.getMonth(), 1);
+      start.setHours(0, 0, 0, 0);
+      end = new Date(now);
+      end.setHours(23, 59, 59, 999);
+      break;
+    }
+    case "custom": {
+      start = startDate ? new Date(startDate) : new Date(0);
+      start.setHours(0, 0, 0, 0);
+      end = endDate ? new Date(endDate) : new Date();
+      end.setHours(23, 59, 59, 999);
+      break;
+    }
+    default: {
+      start = new Date(now);
+      start.setHours(0, 0, 0, 0);
+      end = new Date(now);
+      end.setHours(23, 59, 59, 999);
+      break;
+    }
+  }
+
+  return { start, end };
+};
+
 export const getEmployeeDashboard = async (req, res, next) => {
   try {
     const employeeId = getEmployeeId(req);
@@ -24,25 +63,26 @@ export const getEmployeeDashboard = async (req, res, next) => {
       return res.status(401).json({ message: "Employee context not found" });
     }
 
-    const todayStart = startOfDay();
-    const todayEnd = endOfDay();
+    const { filter = "today", startDate, endDate } = req.query;
+    const { start, end } = getDateRange(filter, startDate, endDate);
 
-    const [ordersToday, returnsToday] = await Promise.all([
-      Order.countDocuments({
-        employeeId,
-        createdAt: { $gte: todayStart, $lte: todayEnd }
-      }),
-      ReturnRequest.countDocuments({
-        employeeId,
-        createdAt: { $gte: todayStart, $lte: todayEnd }
-      })
+    const dateFilter = { employeeId, createdAt: { $gte: start, $lte: end } };
+
+    const [orderCount, returnCount, recentOrders, recentReturns] = await Promise.all([
+      Order.countDocuments(dateFilter),
+      ReturnRequest.countDocuments(dateFilter),
+      Order.find(dateFilter).sort({ createdAt: -1 }).limit(5).lean(),
+      ReturnRequest.find(dateFilter).sort({ createdAt: -1 }).limit(5).lean()
     ]);
 
     return res.status(200).json({
       data: {
         name: getEmployeeName(req),
-        ordersToday,
-        returnsToday
+        filter,
+        orderCount,
+        returnCount,
+        recentOrders,
+        recentReturns
       }
     });
   } catch (error) {

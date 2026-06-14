@@ -15,6 +15,9 @@ const initialState = {
   amount: "",
   advanceAmount: "",
   description: "",
+  parcelStatus: "Pending",
+  trackingId: "",
+  courierCompany: "",
 };
 
 const allowedImageTypes = ["image/jpeg", "image/jpg", "image/png"];
@@ -139,6 +142,9 @@ const OrderPage = () => {
       payload.append("totalAmount", String(totalAmount));
       payload.append("advanceAmount", String(Number(form.advanceAmount)));
       payload.append("description", form.description);
+      payload.append("parcelStatus", form.parcelStatus);
+      payload.append("trackingId", form.trackingId);
+      payload.append("courierCompany", form.courierCompany);
       if (paymentFile) payload.append("paymentScreenshot", paymentFile);
       await api.post("/orders", payload);
       navigate("/admin/orders/manage", { replace: true });
@@ -280,6 +286,30 @@ const OrderPage = () => {
                   onChange={(e) => onChange("description", e.target.value)}
                   placeholder="Enter any additional order details or notes..."
                   rows={3}
+                />
+              </Field>
+              <Field label="Parcel Status">
+                <select value={form.parcelStatus} onChange={(e) => onChange("parcelStatus", e.target.value)}>
+                  <option value="Pending">Pending</option>
+                  <option value="Process">Process</option>
+                  <option value="Parcel">Parcel</option>
+                  <option value="Packed">Packed</option>
+                  <option value="Dispatched">Dispatched</option>
+                  <option value="Delivered">Delivered</option>
+                </select>
+              </Field>
+              <Field label="Tracking ID">
+                <input
+                  placeholder="Enter tracking ID"
+                  value={form.trackingId}
+                  onChange={(e) => onChange("trackingId", e.target.value)}
+                />
+              </Field>
+              <Field label="Courier Company">
+                <input
+                  placeholder="Enter courier company name"
+                  value={form.courierCompany}
+                  onChange={(e) => onChange("courierCompany", e.target.value)}
                 />
               </Field>
               <Field label="Payment Screenshot" error={errors.paymentScreenshot}>

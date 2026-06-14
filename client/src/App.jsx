@@ -20,6 +20,8 @@ import EmployeeDashboardPage from "./pages/EmployeeDashboardPage.jsx";
 import EmployeeOrderPage from "./pages/EmployeeOrderPage.jsx";
 import EmployeeReturnPage from "./pages/EmployeeReturnPage.jsx";
 import AdminPerformancePage from "./pages/AdminPerformancePage.jsx";
+import RevenuePage from "./pages/RevenuePage.jsx";
+import SalesPage from "./pages/SalesPage.jsx";
 import EmployeeDetailsPage from "./pages/EmployeeDetailsPage.jsx";
 import CallingReportPage from "./pages/CallingReportPage.jsx";
 import EmployeeCallingPage from "./pages/EmployeeCallingPage.jsx";
@@ -71,6 +73,8 @@ const App = () => {
           <Route path="/admin/register/:id" element={<RegisterPage />} />
           <Route path="/admin/customers" element={<CustomersPage />} />
           <Route path="/admin/products" element={<ProductsPage />} />
+          <Route path="/admin/revenue" element={<RevenuePage />} />
+          <Route path="/admin/sales" element={<SalesPage />} />
           <Route path="/admin/performance" element={<AdminPerformancePage />} />
           <Route path="/admin/employee-details" element={<EmployeeDetailsPage />} />
           <Route path="/admin/calling-report" element={<CallingReportPage />} />

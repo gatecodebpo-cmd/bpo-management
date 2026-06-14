@@ -34,6 +34,22 @@ const statusBadge = (status) => {
   );
 };
 
+const parcelBadge = (status) => {
+  const colors = {
+    "Pending": "var(--warning)", "Process": "#8b5cf6",
+    "Parcel": "var(--primary)", "Packed": "#f59e0b",
+    "Dispatched": "#3b82f6", "Delivered": "var(--success)",
+  };
+  return (
+    <span style={{
+      display: "inline-block", padding: "3px 10px", borderRadius: 20, fontSize: 11,
+      fontWeight: 600, background: `${colors[status] || "#666"}22`,
+      color: colors[status] || "#666", border: `1px solid ${colors[status] || "#666"}44`,
+      whiteSpace: "nowrap",
+    }}>{status}</span>
+  );
+};
+
 const orderEditFields = [
   { key: "customerName", label: "Customer Name" },
   { key: "mobileNumber", label: "Mobile Number" },
@@ -52,28 +68,15 @@ const orderEditFields = [
     key: "orderStatus", label: "Status", type: "select",
     options: ["Pending", "Approved", "Processing", "Delivered", "Cancelled"]
   },
+  {
+    key: "parcelStatus", label: "Parcel Status", type: "select",
+    options: ["Pending", "Process", "Parcel", "Packed", "Dispatched", "Delivered"]
+  },
+  { key: "trackingId", label: "Tracking ID" },
+  { key: "courierCompany", label: "Courier Company" },
 ];
 
-const columns = [
-  { key: "customerName", label: "Customer" },
-  { key: "mobileNumber", label: "Mobile" },
-  { key: "productType", label: "Product" },
-  { key: "numberOfUnits", label: "Units" },
-  { key: "totalAmount", label: "Total", render: (row) => formatCurrency(row.totalAmount) },
-  { key: "incentive", label: "Incentive", render: (row) => formatCurrency(row.incentive) },
-  { key: "advanceAmount", label: "Advance", render: (row) => formatCurrency(row.advanceAmount) },
-  {
-    key: "paymentScreenshot", label: "Payment",
-    render: (row) =>
-      row.paymentScreenshot ? (
-        <a href={toAbsoluteAssetUrl(row.paymentScreenshot)} target="_blank" rel="noreferrer">
-          <img className="table-preview-image" src={toAbsoluteAssetUrl(row.paymentScreenshot)} alt="Payment" />
-        </a>
-      ) : "-",
-  },
-  { key: "createdAt", label: "Date", render: (row) => formatDateTime(row.createdAt) },
-  { key: "orderStatus", label: "Status", render: (row) => statusBadge(row.orderStatus) },
-];
+const parcelStatusOptions = ["Pending", "Process", "Parcel", "Packed", "Dispatched", "Delivered"];
 
 const fetchOrders = async () => {
   const res = await api.get("/orders");
@@ -142,6 +145,11 @@ const OrderManagePage = () => {
     handleRefresh();
   };
 
+  const updateParcelStatus = async (id, parcelStatus) => {
+    await api.patch(`/orders/${id}/parcel-status`, { parcelStatus });
+    handleRefresh();
+  };
+
   const handleEdit = (row) => {
     setEditRow(row);
   };
@@ -155,6 +163,53 @@ const OrderManagePage = () => {
   const handleDownloadPDF = () => {
     downloadAllOrdersPDF(orders);
   };
+
+  const columns = [
+    { key: "customerName", label: "Customer" },
+    { key: "mobileNumber", label: "Mobile" },
+    { key: "productType", label: "Product" },
+    { key: "numberOfUnits", label: "Units" },
+    { key: "totalAmount", label: "Total", render: (row) => formatCurrency(row.totalAmount) },
+    { key: "incentive", label: "Incentive", render: (row) => formatCurrency(row.incentive) },
+    { key: "advanceAmount", label: "Advance", render: (row) => formatCurrency(row.advanceAmount) },
+    {
+      key: "paymentScreenshot", label: "Payment",
+      render: (row) =>
+        row.paymentScreenshot ? (
+          <a href={toAbsoluteAssetUrl(row.paymentScreenshot)} target="_blank" rel="noreferrer">
+            <img className="table-preview-image" src={toAbsoluteAssetUrl(row.paymentScreenshot)} alt="Payment" />
+          </a>
+        ) : "-",
+    },
+    { key: "createdAt", label: "Date", render: (row) => formatDateTime(row.createdAt) },
+    { key: "orderStatus", label: "Status", render: (row) => statusBadge(row.orderStatus) },
+    {
+      key: "parcelStatus", label: "Parcel",
+      render: (row) => (
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          {parcelBadge(row.parcelStatus)}
+          <select
+            value={row.parcelStatus || "Pending"}
+            onChange={(e) => updateParcelStatus(row._id, e.target.value)}
+            style={{ fontSize: 11, padding: "2px 4px", minWidth: 70 }}
+            title="Change parcel status"
+          >
+            {parcelStatusOptions.map((s) => (<option key={s} value={s}>{s}</option>))}
+          </select>
+        </div>
+      )
+    },
+    {
+      key: "trackingId", label: "Tracking",
+      render: (row) => row.trackingId ? (
+        <span style={{ fontSize: 12, color: "var(--primary)" }}>{row.trackingId}</span>
+      ) : "-"
+    },
+    {
+      key: "courierCompany", label: "Courier",
+      render: (row) => row.courierCompany || "-"
+    },
+  ];
 
   return (
     <section className="admin-page">
@@ -182,7 +237,7 @@ const OrderManagePage = () => {
           data={orders}
           statusOptions={["Pending", "Approved", "Processing", "Delivered", "Cancelled"]}
           onStatusChange={updateOrderStatus}
-          searchKeys={["customerName", "mobileNumber", "productType", "orderStatus"]}
+          searchKeys={["customerName", "mobileNumber", "productType", "orderStatus", "parcelStatus", "trackingId", "courierCompany"]}
           onEdit={handleEdit}
         />
       )}

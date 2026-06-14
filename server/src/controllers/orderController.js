@@ -55,7 +55,8 @@ export const updateOrder = async (req, res, next) => {
     const allowedFields = [
       "customerName", "mobileNumber", "fullAddress", "pincode",
       "productType", "customProductName", "numberOfUnits", "amount",
-      "totalAmount", "advanceAmount", "dateOfOrder", "orderStatus"
+      "totalAmount", "advanceAmount", "dateOfOrder", "orderStatus",
+      "parcelStatus", "trackingId", "courierCompany"
     ];
     const update = {};
     for (const field of allowedFields) {
@@ -66,6 +67,25 @@ export const updateOrder = async (req, res, next) => {
       return res.status(404).json({ message: "Order not found" });
     }
     return res.status(200).json({ message: "Order updated successfully", data: order });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const updateParcelStatus = async (req, res, next) => {
+  try {
+    if (!isDatabaseReady()) {
+      return res.status(503).json({ message: "Database unavailable. Cannot update parcel." });
+    }
+    const update = { parcelStatus: req.body.parcelStatus };
+    if (req.body.trackingId !== undefined) update.trackingId = req.body.trackingId;
+    if (req.body.courierCompany !== undefined) update.courierCompany = req.body.courierCompany;
+
+    const order = await Order.findByIdAndUpdate(req.params.id, update, { new: true });
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+    return res.status(200).json({ message: "Parcel status updated", data: order });
   } catch (error) {
     return next(error);
   }

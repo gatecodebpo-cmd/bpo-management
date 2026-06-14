@@ -1,3 +1,4 @@
+import { isDatabaseReady } from "../config/db.js";
 import { Order } from "../models/Order.js";
 import { ReturnRequest } from "../models/ReturnRequest.js";
 import { CallingRecord } from "../models/CallingRecord.js";
@@ -173,6 +174,99 @@ export const getEmployeeDetails = async (req, res, next) => {
   }
 };
 
+export const getRevenueSummary = async (req, res, next) => {
+  try {
+    if (!isDatabaseReady()) {
+      return res.status(503).json({ message: "Database unavailable." });
+    }
+
+    const now = new Date();
+    const filterMonth = parseInt(req.query.month);
+    const filterYear = parseInt(req.query.year);
+
+    const targetMonth = !isNaN(filterMonth) ? filterMonth : now.getMonth();
+    const targetYear = !isNaN(filterYear) ? filterYear : now.getFullYear();
+
+    const startOfMonth = new Date(targetYear, targetMonth, 1);
+    startOfMonth.setHours(0, 0, 0, 0);
+    const endOfMonth = new Date(targetYear, targetMonth + 1, 0);
+    endOfMonth.setHours(23, 59, 59, 999);
+
+    const today = new Date(now);
+    const isCurrentMonth = targetMonth === today.getMonth() && targetYear === today.getFullYear();
+
+    let startOfDay = null, endOfDay = null, startOfWeek = null, endOfWeek = null;
+
+    if (isCurrentMonth) {
+      startOfDay = new Date(today);
+      startOfDay.setHours(0, 0, 0, 0);
+      endOfDay = new Date(today);
+      endOfDay.setHours(23, 59, 59, 999);
+
+      startOfWeek = new Date(today);
+      startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+      startOfWeek.setHours(0, 0, 0, 0);
+      endOfWeek = new Date(today);
+      endOfWeek.setHours(23, 59, 59, 999);
+    }
+
+    const callMatch = { date: { $gte: startOfMonth, $lte: endOfMonth } };
+    const orderMatch = { createdAt: { $gte: startOfMonth, $lte: endOfMonth } };
+
+    const dayCallMatch = startOfDay ? { date: { $gte: startOfDay, $lte: endOfDay } } : null;
+    const dayOrderMatch = startOfDay ? { createdAt: { $gte: startOfDay, $lte: endOfDay } } : null;
+    const weekCallMatch = startOfWeek ? { date: { $gte: startOfWeek, $lte: endOfWeek } } : null;
+    const weekOrderMatch = startOfWeek ? { createdAt: { $gte: startOfWeek, $lte: endOfWeek } } : null;
+
+    const aggregate = async (model, match) => {
+      if (!match) return [{ total: 0 }];
+      return model.aggregate([
+        { $match: match },
+        { $group: { _id: null, total: { $sum: "$revenueGenerated" } } }
+      ]);
+    };
+
+    const aggregateOrder = async (match) => {
+      if (!match) return [{ total: 0 }];
+      return Order.aggregate([
+        { $match: match },
+        { $group: { _id: null, total: { $sum: "$totalAmount" } } }
+      ]);
+    };
+
+    const [dayRevenue, weekRevenue, monthRevenue, dayOrderRevenue, weekOrderRevenue, monthOrderRevenue] =
+      await Promise.all([
+        aggregate(CallingRecord, dayCallMatch),
+        aggregate(CallingRecord, weekCallMatch),
+        aggregate(CallingRecord, callMatch),
+        aggregateOrder(dayOrderMatch),
+        aggregateOrder(weekOrderMatch),
+        aggregateOrder(orderMatch)
+      ]);
+
+    const getVal = (arr) => (arr[0]?.total || 0);
+
+    const dailyCall = getVal(dayRevenue);
+    const weeklyCall = getVal(weekRevenue);
+    const monthlyCall = getVal(monthRevenue);
+
+    const dailyOrd = getVal(dayOrderRevenue);
+    const weeklyOrd = getVal(weekOrderRevenue);
+    const monthlyOrd = getVal(monthOrderRevenue);
+
+    return res.status(200).json({
+      data: {
+        daily: { calling: dailyCall, orders: dailyOrd, total: dailyCall + dailyOrd },
+        weekly: { calling: weeklyCall, orders: weeklyOrd, total: weeklyCall + weeklyOrd },
+        monthly: { calling: monthlyCall, orders: monthlyOrd, total: monthlyCall + monthlyOrd },
+        filter: { month: targetMonth, year: targetYear, label: new Date(targetYear, targetMonth).toLocaleString("default", { month: "long", year: "numeric" }) }
+      }
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
 export const getEmployeeSummary = async (req, res, next) => {
   try {
     const { startDate, endDate } = req.query;
@@ -193,6 +287,83 @@ export const getEmployeeSummary = async (req, res, next) => {
     );
 
     return res.status(200).json({ data: summary });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const getSalesSummary = async (req, res, next) => {
+  try {
+    if (!isDatabaseReady()) {
+      return res.status(503).json({ message: "Database unavailable." });
+    }
+
+    const now = new Date();
+    const filterMonth = parseInt(req.query.month);
+    const filterYear = parseInt(req.query.year);
+
+    const targetMonth = !isNaN(filterMonth) ? filterMonth : now.getMonth();
+    const targetYear = !isNaN(filterYear) ? filterYear : now.getFullYear();
+
+    const startOfMonth = new Date(targetYear, targetMonth, 1);
+    startOfMonth.setHours(0, 0, 0, 0);
+    const endOfMonth = new Date(targetYear, targetMonth + 1, 0);
+    endOfMonth.setHours(23, 59, 59, 999);
+
+    const today = new Date(now);
+    const isCurrentMonth = targetMonth === today.getMonth() && targetYear === today.getFullYear();
+
+    let startOfDay = null, endOfDay = null, startOfWeek = null, endOfWeek = null;
+
+    if (isCurrentMonth) {
+      startOfDay = new Date(today);
+      startOfDay.setHours(0, 0, 0, 0);
+      endOfDay = new Date(today);
+      endOfDay.setHours(23, 59, 59, 999);
+
+      startOfWeek = new Date(today);
+      startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+      startOfWeek.setHours(0, 0, 0, 0);
+      endOfWeek = new Date(today);
+      endOfWeek.setHours(23, 59, 59, 999);
+    }
+
+    const orderMatch = { createdAt: { $gte: startOfMonth, $lte: endOfMonth } };
+    const dayOrderMatch = startOfDay ? { createdAt: { $gte: startOfDay, $lte: endOfDay } } : null;
+    const weekOrderMatch = startOfWeek ? { createdAt: { $gte: startOfWeek, $lte: endOfWeek } } : null;
+
+    const aggregateSales = async (match) => {
+      if (!match) return [{ total: 0, count: 0, units: 0 }];
+      return Order.aggregate([
+        { $match: match },
+        {
+          $group: {
+            _id: null,
+            total: { $sum: "$totalAmount" },
+            count: { $sum: 1 },
+            units: { $sum: "$numberOfUnits" }
+          }
+        }
+      ]);
+    };
+
+    const [dayData, weekData, monthData] = await Promise.all([
+      aggregateSales(dayOrderMatch),
+      aggregateSales(weekOrderMatch),
+      aggregateSales(orderMatch)
+    ]);
+
+    const getVal = (arr, field) => (arr[0]?.[field] || 0);
+    const label = new Date(targetYear, targetMonth).toLocaleString("default", { month: "long", year: "numeric" });
+
+    return res.status(200).json({
+      data: {
+        daily: { total: getVal(dayData, "total"), count: getVal(dayData, "count"), units: getVal(dayData, "units") },
+        weekly: { total: getVal(weekData, "total"), count: getVal(weekData, "count"), units: getVal(weekData, "units") },
+        monthly: { total: getVal(monthData, "total"), count: getVal(monthData, "count"), units: getVal(monthData, "units") },
+        filter: { month: targetMonth, year: targetYear, label }
+      }
+    });
   } catch (error) {
     return next(error);
   }

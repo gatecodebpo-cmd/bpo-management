@@ -47,8 +47,14 @@ const LogoutIcon = () => (
   <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
 );
 
+const DollarIcon = () => (
+  <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+);
+
 const links = [
   { to: "/admin/dashboard", label: "Dashboard", icon: ShieldIcon },
+  { to: "/admin/revenue", label: "Total Revenue", icon: DollarIcon },
+  { to: "/admin/sales", label: "Sales", icon: BarChartIcon },
 ];
 
 const bottomLinks = [
