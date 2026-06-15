@@ -21,7 +21,7 @@ const callingRecordSchema = new mongoose.Schema(
 );
 
 callingRecordSchema.virtual("totalCallsDone").get(function () {
-  return (this.outgoingCalls || 0) + (this.incomingCalls || 0);
+  return (this.outgoingCalls || 0) + (this.incomingCalls || 0) + (this.followUpCalls || 0);
 });
 
 callingRecordSchema.set("toJSON", { virtuals: true });

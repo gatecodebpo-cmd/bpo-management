@@ -195,12 +195,6 @@ export const loginAdmin = async (req, res, next) => {
         return res.status(403).json({ message: "Only Employee users can login here." });
       }
 
-      if (user.tokenVersion > 0) {
-        const maxAge = 24 * 60 * 60 * 1000;
-        if (Date.now() - user.tokenVersion < maxAge) {
-          return res.status(409).json({ message: "This account is already logged in on another device.\nPlease logout from the previous session first." });
-        }
-      }
       user.tokenVersion = Date.now();
       await user.save();
 

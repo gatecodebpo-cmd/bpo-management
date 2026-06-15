@@ -25,6 +25,7 @@ import SalesPage from "./pages/SalesPage.jsx";
 import EmployeeDetailsPage from "./pages/EmployeeDetailsPage.jsx";
 import CallingReportPage from "./pages/CallingReportPage.jsx";
 import EmployeeCallingPage from "./pages/EmployeeCallingPage.jsx";
+import EmployeeCustomerPage from "./pages/EmployeeCustomerPage.jsx";
 
 const RootRedirect = () => {
   const { user, loading } = useAuth();
@@ -86,6 +87,7 @@ const App = () => {
           <Route path="/employee/orders" element={<EmployeeOrderPage />} />
           <Route path="/employee/returns" element={<EmployeeReturnPage />} />
           <Route path="/employee/calling-report" element={<EmployeeCallingPage />} />
+          <Route path="/employee/customers" element={<EmployeeCustomerPage />} />
         </Route>
         
         <Route path="*" element={<Navigate to="/login" replace />} />

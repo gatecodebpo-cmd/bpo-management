@@ -11,6 +11,7 @@ import employeeRoutes from "./routes/employeeRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import employeeRecordRoutes from "./routes/employeeRecordRoutes.js";
 import callingRecordRoutes from "./routes/callingRecordRoutes.js";
+import customerRoutes from "./routes/customerRoutes.js";
 import { errorHandler, notFound } from "./middleware/errorMiddleware.js";
 
 const app = express();
@@ -34,6 +35,7 @@ app.use("/api/employee", employeeRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/employee-records", employeeRecordRoutes);
 app.use("/api/calling-records", callingRecordRoutes);
+app.use("/api/customers", customerRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

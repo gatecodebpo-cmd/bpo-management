@@ -34,13 +34,17 @@ export const ensureFixedEmployeeUser = async () => {
   await User.findOneAndUpdate(
     { email: employeeEmail },
     {
-      name: employeeName,
-      email: employeeEmail,
-      password: hashedPassword,
-      role: "employee",
-      username: "karan"
+      $set: {
+        name: employeeName,
+        email: employeeEmail,
+        password: hashedPassword,
+        role: "employee"
+      },
+      $setOnInsert: {
+        username: "karan"
+      }
     },
-    { upsert: true, returnDocument: "after", setDefaultsOnInsert: true }
+    { upsert: true, returnDocument: "after" }
   );
 
   console.log(`Fixed employee user ready: ${employeeEmail}`);

@@ -159,7 +159,7 @@ const EmployeeCallingPage = () => {
     setEditingId(record._id);
   };
 
-  const totalCalls = (Number(form.outgoingCalls) || 0) + (Number(form.incomingCalls) || 0);
+  const totalCalls = (Number(form.outgoingCalls) || 0) + (Number(form.incomingCalls) || 0) + (Number(form.followUpCalls) || 0);
 
   return (
     <section className="admin-page">
@@ -321,7 +321,7 @@ const EmployeeCallingPage = () => {
                   <td>{r.notInterestedLeads || 0}</td>
                   <td>{r.followUpCalls || 0}</td>
                   <td>{r.followUpLeads || 0}</td>
-                  <td style={{ fontWeight: 600 }}>{(r.outgoingCalls || 0) + (r.incomingCalls || 0)}</td>
+                  <td style={{ fontWeight: 600 }}>{(r.outgoingCalls || 0) + (r.incomingCalls || 0) + (r.followUpCalls || 0)}</td>
                   <td>{r.conversionsDone || 0}</td>
                   <td style={{ fontWeight: 600 }}>₹{r.revenueGenerated || 0}</td>
                   <td>
