@@ -42,6 +42,10 @@ export const protect = async (req, res, next) => {
 
     const user = await User.findById(decoded.id).select("-password").lean();
     if (user) {
+      if ((decoded.tokenVersion ?? 0) !== (user.tokenVersion ?? 0)) {
+        return res.status(401).json({ message: "Session expired. You have been logged out from another device." });
+      }
+
       const adminEmail = process.env.ADMIN_EMAIL || "uttam306115@gmail.com";
       if (user.email?.toLowerCase() === adminEmail.toLowerCase()) {
         user.role = "admin";

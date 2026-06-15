@@ -16,7 +16,7 @@ const isFixedAdminCredentials = (email, password) =>
 
 const signToken = (user) =>
   jwt.sign(
-    { id: user.id || user._id, name: user.name, email: user.email, role: user.role },
+    { id: user.id || user._id, name: user.name, email: user.email, role: user.role, tokenVersion: user.tokenVersion ?? 0 },
     process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRES_IN || "1d" }
   );
@@ -195,9 +195,12 @@ export const loginAdmin = async (req, res, next) => {
         return res.status(403).json({ message: "Only Employee users can login here." });
       }
 
+      user.tokenVersion = (user.tokenVersion ?? 0) + 1;
+      await user.save();
+
       return res.status(200).json({
         message: "Login successful",
-        token: signToken({ id: user._id, name: user.name, email: user.email, role: userRole }),
+        token: signToken({ id: user._id, name: user.name, email: user.email, role: userRole, tokenVersion: user.tokenVersion }),
         user: { id: user._id, name: user.name, email: user.email, role: userRole }
       });
     }
