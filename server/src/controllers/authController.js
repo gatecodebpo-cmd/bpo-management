@@ -195,7 +195,13 @@ export const loginAdmin = async (req, res, next) => {
         return res.status(403).json({ message: "Only Employee users can login here." });
       }
 
-      user.tokenVersion = (user.tokenVersion ?? 0) + 1;
+      if (user.tokenVersion > 0) {
+        const maxAge = 24 * 60 * 60 * 1000;
+        if (Date.now() - user.tokenVersion < maxAge) {
+          return res.status(409).json({ message: "This account is already logged in on another device.\nPlease logout from the previous session first." });
+        }
+      }
+      user.tokenVersion = Date.now();
       await user.save();
 
       return res.status(200).json({
@@ -219,6 +225,18 @@ export const loginAdmin = async (req, res, next) => {
       token: signToken(adminUser),
       user: adminUser
     });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const logoutUser = async (req, res, next) => {
+  try {
+    if (!isDatabaseReady()) {
+      return res.status(200).json({ message: "Logged out successfully" });
+    }
+    await User.findByIdAndUpdate(req.user._id, { tokenVersion: 0 });
+    return res.status(200).json({ message: "Logged out successfully" });
   } catch (error) {
     return next(error);
   }

@@ -77,9 +77,12 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    try {
+      await api.post("/auth/logout");
+    } catch {}
     localStorage.removeItem("dashboard_token");
-    setUser(null); // Set to null, not a guest user
+    setUser(null);
   }, []);
 
   return (
