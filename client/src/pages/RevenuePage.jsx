@@ -131,7 +131,7 @@ const RevenuePage = () => {
         <p style={{ color: "var(--text-muted)", textAlign: "center", marginTop: 40 }}>Could not load revenue data.</p>
       ) : (
         <>
-          <div className="stats-grid" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
+          <div className="stats-grid stats-grid-3">
             {periods.map(({ label, data, color }) => (
               <article
                 key={label}

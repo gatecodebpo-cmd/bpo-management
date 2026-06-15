@@ -1,6 +1,6 @@
-// App.js - Final Working Version
 import { Route, Routes, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { SidebarProvider } from "./context/SidebarContext";
 import DashboardLayout from "./components/DashboardLayout.jsx";
 import EmployeeLayout from "./components/EmployeeLayout.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
@@ -40,13 +40,17 @@ const RootRedirect = () => {
 
 const AdminLayout = () => (
   <ProtectedRoute>
-    <DashboardLayout />
+    <SidebarProvider>
+      <DashboardLayout />
+    </SidebarProvider>
   </ProtectedRoute>
 );
 
 const EmployeeOnlyLayout = () => (
   <ProtectedRoute role="employee">
-    <EmployeeLayout />
+    <SidebarProvider>
+      <EmployeeLayout />
+    </SidebarProvider>
   </ProtectedRoute>
 );
 

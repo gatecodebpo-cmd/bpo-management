@@ -220,7 +220,7 @@ const EmployeeDetailsPage = () => {
                 placeholder="Search by name, email, phone..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                style={{ paddingLeft: 32, minWidth: 280 }}
+                style={{ paddingLeft: 32, minWidth: 0, width: "100%" }}
               />
             </div>
           </div>

@@ -1,17 +1,28 @@
-import { Outlet } from "react-router-dom";
+import { useEffect } from "react";
+import { Outlet, useLocation } from "react-router-dom";
+import { useSidebar } from "../context/SidebarContext";
 import Sidebar from "./Sidebar.jsx";
 import TopNavbar from "./TopNavbar.jsx";
 
-const DashboardLayout = () => (
-  <div className="app-shell">
-    <Sidebar />
-    <div className="main-area">
-      <TopNavbar />
-      <main className="content-area">
-        <Outlet />
-      </main>
+const DashboardLayout = () => {
+  const { closeSidebar } = useSidebar();
+  const location = useLocation();
+
+  useEffect(() => {
+    closeSidebar();
+  }, [location.pathname, closeSidebar]);
+
+  return (
+    <div className="app-shell">
+      <Sidebar />
+      <div className="main-area">
+        <TopNavbar />
+        <main className="content-area">
+          <Outlet />
+        </main>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 export default DashboardLayout;

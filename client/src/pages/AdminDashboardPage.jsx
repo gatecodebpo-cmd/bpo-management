@@ -382,9 +382,9 @@ const DoughnutChart = ({ pending = 120, processing = 200, delivered = 50, cancel
           <span>{total} total</span>
         </div>
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap' }}>
         <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <svg viewBox="0 0 120 120" width="160" height="160" style={{ display: 'block' }}>
+          <svg viewBox="0 0 120 120" style={{ display: 'block', width: '100%', maxWidth: 160, height: 'auto' }}>
             <circle cx="60" cy="60" r="42" fill="none" stroke="#f1f5f9" strokeWidth="10" />
             {items.map((item) => {
               const dash = (item.value / total) * circumference;

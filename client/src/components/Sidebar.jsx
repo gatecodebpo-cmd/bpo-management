@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useSidebar } from "../context/SidebarContext";
 import { api } from "../api/client";
 
 const OrderIcon = () => (
@@ -64,6 +65,7 @@ const bottomLinks = [
 
 const Sidebar = () => {
   const { user, logout } = useAuth();
+  const { sidebarOpen, closeSidebar } = useSidebar();
   const navigate = useNavigate();
   const [ordersOpen, setOrdersOpen] = useState(true);
   const [returnsOpen, setReturnsOpen] = useState(true);
@@ -89,113 +91,120 @@ const Sidebar = () => {
     navigate(loginPath, { replace: true });
   };
 
+  const handleNavClick = () => {
+    closeSidebar();
+  };
+
   const userName = user?.name || user?.email || "Admin";
   const userInitial = userName.charAt(0).toUpperCase();
 
   return (
-    <aside className="sidebar">
-      <div className="sidebar-header">
-        <div className="sidebar-logo">DB</div>
-        <div className="sidebar-header-info">
-          <h3>Dashboard</h3>
-          <span>Management Portal</span>
+    <>
+      <div className={`sidebar-overlay ${sidebarOpen ? "active" : ""}`} onClick={closeSidebar} />
+      <aside className={`sidebar ${sidebarOpen ? "sidebar-open" : ""}`}>
+        <div className="sidebar-header">
+          <div className="sidebar-logo">DB</div>
+          <div className="sidebar-header-info">
+            <h3>Dashboard</h3>
+            <span>Management Portal</span>
+          </div>
         </div>
-      </div>
-      <nav className="sidebar-nav">
-        {links.map(({ to, label, icon: Icon }) => (
-          <NavLink key={to} to={to} className="sidebar-link">
-            <span className="sidebar-icon"><Icon /></span>
-            {label}
-          </NavLink>
-        ))}
-        <div className="sidebar-dropdown">
-          <button className="sidebar-link sidebar-dropdown-btn" onClick={() => setOrdersOpen(!ordersOpen)}>
-            <span className="sidebar-icon"><OrderIcon /></span>
-            Orders
-            <ChevronDown />
-          </button>
-          {ordersOpen && (
-            <div className="sidebar-submenu">
-              <NavLink to="/admin/orders" className="sidebar-sublink">New Order</NavLink>
-              <NavLink to="/admin/orders/manage" className="sidebar-sublink">Order Management</NavLink>
-              <NavLink to="/admin/orders/history" className="sidebar-sublink">Order History</NavLink>
-            </div>
-          )}
-        </div>
-        <div className="sidebar-dropdown">
-          <button className="sidebar-link sidebar-dropdown-btn" onClick={() => setReturnsOpen(!returnsOpen)}>
-            <span className="sidebar-icon"><ReturnIcon /></span>
-            Returns
-            <ChevronDown />
-          </button>
-          {returnsOpen && (
-            <div className="sidebar-submenu">
-              <NavLink to="/admin/returns" className="sidebar-sublink">New Return</NavLink>
-              <NavLink to="/admin/returns/manage" className="sidebar-sublink">Return Management</NavLink>
-              <NavLink to="/admin/returns/history" className="sidebar-sublink">Return History</NavLink>
-            </div>
-          )}
-        </div>
-        <div className="sidebar-dropdown">
-          <div className="sidebar-link sidebar-dropdown-btn">
-            <NavLink to="/admin/users" className="sidebar-dropdown-label" onClick={() => setUsersOpen(false)}>
-              <span className="sidebar-icon"><UserPlusIcon /></span>
-              User Details
+        <nav className="sidebar-nav">
+          {links.map(({ to, label, icon: Icon }) => (
+            <NavLink key={to} to={to} className="sidebar-link" onClick={handleNavClick}>
+              <span className="sidebar-icon"><Icon /></span>
+              {label}
             </NavLink>
-            <button className="sidebar-dropdown-chevron" onClick={() => setUsersOpen(!usersOpen)}>
+          ))}
+          <div className="sidebar-dropdown">
+            <button className="sidebar-link sidebar-dropdown-btn" onClick={() => setOrdersOpen(!ordersOpen)}>
+              <span className="sidebar-icon"><OrderIcon /></span>
+              Orders
               <ChevronDown />
             </button>
+            {ordersOpen && (
+              <div className="sidebar-submenu">
+                <NavLink to="/admin/orders" className="sidebar-sublink" onClick={handleNavClick}>New Order</NavLink>
+                <NavLink to="/admin/orders/manage" className="sidebar-sublink" onClick={handleNavClick}>Order Management</NavLink>
+                <NavLink to="/admin/orders/history" className="sidebar-sublink" onClick={handleNavClick}>Order History</NavLink>
+              </div>
+            )}
           </div>
-          {usersOpen && (
-            <div className="sidebar-submenu">
-              <NavLink to="/admin/register" className="sidebar-sublink" onClick={() => setUsersOpen(false)}>+ Register New</NavLink>
-              {users.map((u) => (
-                <NavLink key={u._id} to={`/admin/register/${u._id}`} className="sidebar-sublink" onClick={() => setUsersOpen(false)}>
-                  <span className="sidebar-sub-user">
-                    <span className="sidebar-sub-user-avatar">{(u.name || "?").charAt(0).toUpperCase()}</span>
-                    <span className="sidebar-sub-user-info">
-                      <span className="sidebar-sub-user-name">{u.name}</span>
-                      <span className="sidebar-sub-user-email">{u.email}</span>
-                      <span className="sidebar-sub-user-detail">{u.username && `@${u.username}`} {u.phoneNumber && `| ${u.phoneNumber}`}</span>
-                    </span>
-                  </span>
-                </NavLink>
-              ))}
+          <div className="sidebar-dropdown">
+            <button className="sidebar-link sidebar-dropdown-btn" onClick={() => setReturnsOpen(!returnsOpen)}>
+              <span className="sidebar-icon"><ReturnIcon /></span>
+              Returns
+              <ChevronDown />
+            </button>
+            {returnsOpen && (
+              <div className="sidebar-submenu">
+                <NavLink to="/admin/returns" className="sidebar-sublink" onClick={handleNavClick}>New Return</NavLink>
+                <NavLink to="/admin/returns/manage" className="sidebar-sublink" onClick={handleNavClick}>Return Management</NavLink>
+                <NavLink to="/admin/returns/history" className="sidebar-sublink" onClick={handleNavClick}>Return History</NavLink>
+              </div>
+            )}
+          </div>
+          <div className="sidebar-dropdown">
+            <div className="sidebar-link sidebar-dropdown-btn">
+              <NavLink to="/admin/users" className="sidebar-dropdown-label" onClick={() => { setUsersOpen(false); handleNavClick(); }}>
+                <span className="sidebar-icon"><UserPlusIcon /></span>
+                User Details
+              </NavLink>
+              <button className="sidebar-dropdown-chevron" onClick={() => setUsersOpen(!usersOpen)}>
+                <ChevronDown />
+              </button>
             </div>
-          )}
-        </div>
-        <NavLink to="/admin/performance" className="sidebar-link">
-          <span className="sidebar-icon"><BarChartIcon /></span>
-          Employee Performance
-        </NavLink>
-        <NavLink to="/admin/calling-report" className="sidebar-link">
-          <span className="sidebar-icon"><PhoneIcon /></span>
-          Calling Report
-        </NavLink>
-        <NavLink to="/admin/employee-details" className="sidebar-link">
-          <span className="sidebar-icon"><ClockIcon /></span>
-          Employee Details
-        </NavLink>
-        {bottomLinks.map(({ to, label, icon: Icon }) => (
-          <NavLink key={to} to={to} className="sidebar-link">
-            <span className="sidebar-icon"><Icon /></span>
-            {label}
-          </NavLink>
-        ))}
-      </nav>
-      <div className="sidebar-footer">
-        <div className="sidebar-user">
-          <div className="sidebar-user-avatar">{userInitial}</div>
-          <div className="sidebar-user-info">
-            <p>{userName}</p>
-            <span>{user?.role || "Administrator"}</span>
+            {usersOpen && (
+              <div className="sidebar-submenu">
+                <NavLink to="/admin/register" className="sidebar-sublink" onClick={() => { setUsersOpen(false); handleNavClick(); }}>+ Register New</NavLink>
+                {users.map((u) => (
+                  <NavLink key={u._id} to={`/admin/register/${u._id}`} className="sidebar-sublink" onClick={() => { setUsersOpen(false); handleNavClick(); }}>
+                    <span className="sidebar-sub-user">
+                      <span className="sidebar-sub-user-avatar">{(u.name || "?").charAt(0).toUpperCase()}</span>
+                      <span className="sidebar-sub-user-info">
+                        <span className="sidebar-sub-user-name">{u.name}</span>
+                        <span className="sidebar-sub-user-email">{u.email}</span>
+                        <span className="sidebar-sub-user-detail">{u.username && `@${u.username}`} {u.phoneNumber && `| ${u.phoneNumber}`}</span>
+                      </span>
+                    </span>
+                  </NavLink>
+                ))}
+              </div>
+            )}
           </div>
+          <NavLink to="/admin/performance" className="sidebar-link" onClick={handleNavClick}>
+            <span className="sidebar-icon"><BarChartIcon /></span>
+            Employee Performance
+          </NavLink>
+          <NavLink to="/admin/calling-report" className="sidebar-link" onClick={handleNavClick}>
+            <span className="sidebar-icon"><PhoneIcon /></span>
+            Calling Report
+          </NavLink>
+          <NavLink to="/admin/employee-details" className="sidebar-link" onClick={handleNavClick}>
+            <span className="sidebar-icon"><ClockIcon /></span>
+            Employee Details
+          </NavLink>
+          {bottomLinks.map(({ to, label, icon: Icon }) => (
+            <NavLink key={to} to={to} className="sidebar-link" onClick={handleNavClick}>
+              <span className="sidebar-icon"><Icon /></span>
+              {label}
+            </NavLink>
+          ))}
+        </nav>
+        <div className="sidebar-footer">
+          <div className="sidebar-user">
+            <div className="sidebar-user-avatar">{userInitial}</div>
+            <div className="sidebar-user-info">
+              <p>{userName}</p>
+              <span>{user?.role || "Administrator"}</span>
+            </div>
+          </div>
+          <button className="sidebar-logout-btn" onClick={handleLogout} title="Logout">
+            <LogoutIcon />
+          </button>
         </div>
-        <button className="sidebar-logout-btn" onClick={handleLogout} title="Logout">
-          <LogoutIcon />
-        </button>
-      </div>
-    </aside>
+      </aside>
+    </>
   );
 };
 

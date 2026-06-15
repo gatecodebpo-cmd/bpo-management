@@ -1,17 +1,28 @@
-import { Outlet } from "react-router-dom";
+import { useEffect } from "react";
+import { Outlet, useLocation } from "react-router-dom";
+import { useSidebar } from "../context/SidebarContext";
 import EmployeeSidebar from "./EmployeeSidebar";
 import EmployeeTopNavbar from "./EmployeeTopNavbar";
 
-const EmployeeLayout = () => (
-  <div className="app-shell">
-    <EmployeeSidebar />
-    <div className="main-area">
-      <EmployeeTopNavbar />
-      <main className="content-area">
-        <Outlet />
-      </main>
+const EmployeeLayout = () => {
+  const { closeSidebar } = useSidebar();
+  const location = useLocation();
+
+  useEffect(() => {
+    closeSidebar();
+  }, [location.pathname, closeSidebar]);
+
+  return (
+    <div className="app-shell">
+      <EmployeeSidebar />
+      <div className="main-area">
+        <EmployeeTopNavbar />
+        <main className="content-area">
+          <Outlet />
+        </main>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 export default EmployeeLayout;

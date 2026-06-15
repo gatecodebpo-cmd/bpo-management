@@ -163,7 +163,7 @@ const ReturnManagePage = () => {
             Manage and update return requests
           </p>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <button className="primary-btn" style={{ background: "#10b981" }} onClick={handleDownloadPDF}>
             Download PDF
           </button>

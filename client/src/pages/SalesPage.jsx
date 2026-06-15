@@ -108,7 +108,7 @@ const SalesPage = () => {
         <p style={{ color: "var(--text-muted)", textAlign: "center", marginTop: 40 }}>Could not load sales data.</p>
       ) : (
         <>
-          <div className="stats-grid" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
+          <div className="stats-grid stats-grid-3">
             {periods.map(({ label, d, color }) => (
               <article key={label} className="stat-card glass-card" style={{ borderTop: `3px solid ${color}`, flexDirection: "column", gap: 12 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12, width: "100%" }}>

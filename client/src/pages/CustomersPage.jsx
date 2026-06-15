@@ -79,7 +79,7 @@ const CustomersPage = () => {
         </div>
       </div>
 
-      <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
+      <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
         <button
           onClick={() => setTab("orders")}
           className="primary-btn"

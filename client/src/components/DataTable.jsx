@@ -45,7 +45,7 @@ const DataTable = ({ title, columns, data, statusOptions = [], onStatusChange, s
       <div className="table-header">
         <h3>{title} <span style={{ fontWeight: 400, fontSize: 13, color: "var(--text-muted)" }}>({items.length})</span></h3>
         <div className="table-controls">
-          <div style={{ position: "relative" }}>
+          <div className="table-search-wrap">
             <SearchIcon />
             <input
               placeholder="Search..."
@@ -97,18 +97,16 @@ const DataTable = ({ title, columns, data, statusOptions = [], onStatusChange, s
                   ))}
                   {showAction && (
                     <td>
-                      <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+                      <div className="table-actions">
                         <select
                           value={row.orderStatus || row.returnStatus}
                           onChange={(e) => onStatusChange(row._id, e.target.value)}
-                          style={{ minWidth: 120, fontSize: 12, padding: "5px 8px" }}
                         >
                           {statusOptions.map((s) => (<option key={s} value={s}>{s}</option>))}
                         </select>
                         {onEdit && (
                           <button
-                            className="primary-btn"
-                            style={{ padding: "5px 10px", fontSize: 11, background: "#3b82f6" }}
+                            className="primary-btn table-action-btn"
                             onClick={() => onEdit(row)}
                           >
                             Edit
@@ -116,7 +114,7 @@ const DataTable = ({ title, columns, data, statusOptions = [], onStatusChange, s
                         )}
                         {onDelete && (
                           <button
-                            style={{ padding: "5px 10px", fontSize: 11, background: "none", border: "1px solid #ef4444", color: "#ef4444", borderRadius: 6, cursor: "pointer", fontWeight: 500 }}
+                            className="table-action-btn table-action-delete"
                             onClick={() => onDelete(row)}
                           >
                             Delete
@@ -132,12 +130,12 @@ const DataTable = ({ title, columns, data, statusOptions = [], onStatusChange, s
         </table>
       </div>
       <div className="pagination">
-        <span style={{ color: "var(--text-muted)", fontSize: 13 }}>
+        <span className="pagination-info">
           Showing {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, filtered.length)} of {filtered.length}
         </span>
-        <div style={{ display: "flex", gap: 6 }}>
+        <div className="pagination-controls">
           <button disabled={page === 1} onClick={() => setPage((p) => p - 1)}>Prev</button>
-          <span style={{ padding: "6px 8px", fontSize: 13, color: "var(--text)" }}>{page} / {maxPage}</span>
+          <span className="pagination-page">{page} / {maxPage}</span>
           <button disabled={page === maxPage} onClick={() => setPage((p) => p + 1)}>Next</button>
         </div>
       </div>

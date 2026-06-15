@@ -212,7 +212,7 @@ const PublicDashboardPage = () => {
 
   return (
     <div className="public-page">
-      <section className="admin-page" style={{ padding: "40px 32px" }}>
+      <section className="admin-page content-area-responsive">
         <div className="admin-head">
           <div>
             <h2>Dashboard</h2>
@@ -256,7 +256,7 @@ const PublicDashboardPage = () => {
 
         {showOrderForm && (
           <div className="form-card glass-card">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "24px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "24px", flexWrap: "wrap", gap: "12px" }}>
               <div>
                 <h2 style={{ margin: "0 0 8px 0" }}>Create New Order</h2>
                 <p className="form-subtitle" style={{ margin: 0 }}>Fill in the order details below</p>
@@ -436,7 +436,7 @@ const PublicDashboardPage = () => {
 
         {showReturnForm && (
           <div className="form-card glass-card">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "24px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "24px", flexWrap: "wrap", gap: "12px" }}>
               <div>
                 <h2 style={{ margin: "0 0 8px 0" }}>Create New Return</h2>
                 <p className="form-subtitle" style={{ margin: 0 }}>Submit a product return request below</p>
