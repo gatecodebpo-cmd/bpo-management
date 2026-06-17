@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../api/client";
+import { useAuth } from "../context/AuthContext";
 
 const buildCustomers = (orders) => {
   const map = new Map();
@@ -18,6 +19,8 @@ const buildCustomers = (orders) => {
 };
 
 const CustomersPage = () => {
+  const { user } = useAuth();
+  const isEmployee = user?.role === "employee";
   const [tab, setTab] = useState("orders");
 
   const [customers, setCustomers] = useState([]);
@@ -33,13 +36,13 @@ const CustomersPage = () => {
   useEffect(() => {
     let mounted = true;
     setLoading(true);
-    api.get("/orders").then((res) => {
+    api.get(isEmployee ? "/employee/orders" : "/orders").then((res) => {
       if (mounted) { setCustomers(buildCustomers(res.data?.data || [])); setLoading(false); }
     }).catch(() => {
       if (mounted) { setLoading(false); }
     });
     return () => { mounted = false; };
-  }, []);
+  }, [isEmployee]);
 
   useEffect(() => {
     if (tab !== "crm") return;
@@ -172,11 +175,11 @@ const CustomersPage = () => {
             <select
               value={followUpFilter}
               onChange={(e) => setFollowUpFilter(e.target.value)}
-              style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid var(--border)", background: "var(--bg-card)", color: "var(--text)", fontSize: 13 }}
+              style={{ padding: "8px 12px", borderRadius: 10, border: "1.5px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.04)", color: "#ffffff", fontSize: 13, cursor: "pointer" }}
             >
-              <option value="All">All</option>
-              <option value="Convert">Convert</option>
-              <option value="Converted">Converted</option>
+              <option value="All" style={{ background: "#1a2540", color: "#ffffff" }}>All</option>
+              <option value="Convert" style={{ background: "#1a2540", color: "#ffffff" }}>Convert</option>
+              <option value="Converted" style={{ background: "#1a2540", color: "#ffffff" }}>Converted</option>
             </select>
           </div>
 

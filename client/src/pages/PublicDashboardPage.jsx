@@ -103,7 +103,6 @@ const PublicDashboardPage = () => {
     } else if (Number(candidate.advanceAmount) > totalAmount) {
       next.advanceAmount = "Advance amount cannot exceed total amount";
     }
-    if (!paymentFile) next.paymentScreenshot = "Payment screenshot is required";
     setOrderErrors(next);
     return Object.keys(next).length === 0;
   };
@@ -124,9 +123,7 @@ const PublicDashboardPage = () => {
   };
 
   const onOrderChange = (key, value) => {
-    const updated = { ...orderForm, [key]: value };
-    setOrderForm(updated);
-    validateOrder(updated);
+    setOrderForm((prev) => ({ ...prev, [key]: value }));
   };
 
   const onReturnChange = (key, value) => setReturnForm((prev) => ({ ...prev, [key]: value }));
@@ -154,7 +151,7 @@ const PublicDashboardPage = () => {
     setPaymentFile(null);
     setPreviewUrl("");
     setUploadState("");
-    setOrderErrors((prev) => ({ ...prev, paymentScreenshot: "Payment screenshot is required" }));
+    setOrderErrors((prev) => ({ ...prev, paymentScreenshot: "" }));
   };
 
   const onOrderSubmit = async (e) => {
@@ -404,7 +401,7 @@ const PublicDashboardPage = () => {
                       rows={3}
                     />
                   </Field>
-                  <Field label="Payment Screenshot" error={orderErrors.paymentScreenshot}>
+                  <Field label="Payment Screenshot (Optional)" error={orderErrors.paymentScreenshot}>
                     <div className={`upload-box ${orderErrors.paymentScreenshot ? "upload-error" : paymentFile ? "upload-ok" : ""}`}>
                       <input
                         type="file"

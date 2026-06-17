@@ -85,15 +85,12 @@ const EmployeeOrderPage = () => {
     } else if (Number(candidate.advanceAmount) > totalAmount) {
       next.advanceAmount = "Advance amount cannot exceed total amount";
     }
-    if (!paymentFile) next.paymentScreenshot = "Payment screenshot is required";
     setErrors(next);
     return Object.keys(next).length === 0;
   };
 
   const onChange = (key, value) => {
-    const updated = { ...form, [key]: value };
-    setForm(updated);
-    validate(updated);
+    setForm((prev) => ({ ...prev, [key]: value }));
   };
 
   const handleScreenshot = (file) => {
@@ -119,7 +116,6 @@ const EmployeeOrderPage = () => {
     setPaymentFile(null);
     setPreviewUrl("");
     setUploadState("");
-    setErrors((prev) => ({ ...prev, paymentScreenshot: "Payment screenshot is required" }));
   };
 
   const onSubmit = async (e) => {
@@ -316,7 +312,7 @@ const EmployeeOrderPage = () => {
                   onChange={(e) => onChange("courierCompany", e.target.value)}
                 />
               </Field>
-              <Field label="Payment Screenshot" error={errors.paymentScreenshot}>
+              <Field label="Payment Screenshot (Optional)" error={errors.paymentScreenshot}>
                 <div className={`upload-box ${errors.paymentScreenshot ? "upload-error" : paymentFile ? "upload-ok" : ""}`}>
                   <input
                     type="file"

@@ -45,7 +45,7 @@ const downloadCallingPDF = (records, filter, startDate, endDate) => {
     r.notInterestedLeads || 0,
     r.followUpCalls || 0,
     r.followUpLeads || 0,
-    (r.outgoingCalls || 0) + (r.incomingCalls || 0),
+    (r.outgoingCalls || 0) + (r.incomingCalls || 0) + (r.followUpCalls || 0),
     r.conversionsDone || 0,
     `Rs.${r.revenueGenerated || 0}`
   ]);
@@ -256,7 +256,7 @@ const CallingReportPage = () => {
                   <td>{r.notInterestedLeads || 0}</td>
                   <td>{r.followUpCalls || 0}</td>
                   <td>{r.followUpLeads || 0}</td>
-                  <td style={{ fontWeight: 600 }}>{(r.outgoingCalls || 0) + (r.incomingCalls || 0)}</td>
+                  <td style={{ fontWeight: 600 }}>{(r.outgoingCalls || 0) + (r.incomingCalls || 0) + (r.followUpCalls || 0)}</td>
                   <td>{r.conversionsDone || 0}</td>
                   <td style={{ fontWeight: 600 }}>₹{r.revenueGenerated || 0}</td>
                   <td>

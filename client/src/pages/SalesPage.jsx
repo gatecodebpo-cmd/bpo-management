@@ -83,12 +83,12 @@ const SalesPage = () => {
           <button onClick={prevMonth} style={{ background: "rgba(255,255,255,0.06)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text)", cursor: "pointer", padding: "6px 8px", display: "flex", alignItems: "center", lineHeight: 0 }}>
             <ChevronLeft />
           </button>
-          <select value={month} onChange={(e) => setMonth(Number(e.target.value))} style={{ background: "rgba(255,255,255,0.06)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text)", padding: "8px 12px", fontSize: 14, cursor: "pointer" }}>
-            {MONTHS.map((name, i) => <option key={i} value={i} style={{ background: "#1a2540" }}>{name}</option>)}
+          <select value={month} onChange={(e) => setMonth(Number(e.target.value))} style={{ background: "rgba(255,255,255,0.04)", border: "1.5px solid rgba(255,255,255,0.08)", borderRadius: 10, color: "#ffffff", padding: "8px 12px", fontSize: 14, cursor: "pointer" }}>
+            {MONTHS.map((name, i) => <option key={i} value={i} style={{ background: "#1a2540", color: "#ffffff" }}>{name}</option>)}
           </select>
-          <select value={year} onChange={(e) => setYear(Number(e.target.value))} style={{ background: "rgba(255,255,255,0.06)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text)", padding: "8px 12px", fontSize: 14, cursor: "pointer" }}>
+          <select value={year} onChange={(e) => setYear(Number(e.target.value))} style={{ background: "rgba(255,255,255,0.04)", border: "1.5px solid rgba(255,255,255,0.08)", borderRadius: 10, color: "#ffffff", padding: "8px 12px", fontSize: 14, cursor: "pointer" }}>
             {Array.from({ length: 10 }, (_, i) => now.getFullYear() - 5 + i).map((y) => (
-              <option key={y} value={y} style={{ background: "#1a2540" }}>{y}</option>
+              <option key={y} value={y} style={{ background: "#1a2540", color: "#ffffff" }}>{y}</option>
             ))}
           </select>
           <button onClick={nextMonth} disabled={isCurrentMonth} style={{ background: "rgba(255,255,255,0.06)", border: "1px solid var(--border)", borderRadius: 8, color: isCurrentMonth ? "var(--text-muted)" : "var(--text)", cursor: isCurrentMonth ? "not-allowed" : "pointer", padding: "6px 8px", display: "flex", alignItems: "center", lineHeight: 0, opacity: isCurrentMonth ? 0.5 : 1 }}>

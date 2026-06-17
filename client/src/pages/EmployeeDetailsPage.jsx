@@ -37,83 +37,172 @@ const downloadEmployeePDF = async (employee, startDate, endDate) => {
 
     const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
     const pageWidth = doc.internal.pageSize.getWidth();
-    let y = 20;
+    let y = 15;
 
-    doc.setFontSize(18);
+    // ── Title ──
+    doc.setFontSize(20);
     doc.setFont("helvetica", "bold");
     doc.text("Employee Details Report", pageWidth / 2, y, { align: "center" });
-    y += 10;
-
-    doc.setFontSize(11);
-    doc.setFont("helvetica", "normal");
-    const rangeText = startDate || endDate ? `Period: ${startDate || "..."} to ${endDate || "..."}` : "Period: All Time";
-    const info = [
-      ["Name", employee.name],
-      ["Email", employee.email],
-      ["Phone", employee.phoneNumber || "-"],
-      ["Username", employee.username || "-"],
-      [rangeText.split(":")[0], rangeText.split(":").slice(1).join(":").trim()],
-      ["Generated", new Date().toLocaleDateString("en-IN")]
-    ];
-    info.forEach(([l, v]) => {
-      doc.setFont("helvetica", "bold"); doc.text(`${l}:`, 14, y);
-      const tw = doc.getTextWidth(`${l}: `);
-      doc.setFont("helvetica", "normal"); doc.text(v, 14 + tw + 2, y);
-      y += 7;
-    });
     y += 8;
 
+    doc.setDrawColor(6, 182, 212);
+    doc.setLineWidth(0.5);
+    doc.line(14, y, pageWidth - 14, y);
+    y += 10;
+
+    // ── Employee Info ──
+    doc.setFontSize(13);
+    doc.setFont("helvetica", "bold");
+    doc.text("Employee Information", 14, y);
+    y += 8;
+
+    const rangeText = startDate || endDate ? `${startDate || "..."} to ${endDate || "..."}` : "All Time";
+    const empInfo = [
+      ["Employee ID", (employee._id || "").slice(-8).toUpperCase()],
+      ["Name", employee.name || "-"],
+      ["Email", employee.email || "-"],
+      ["Phone", employee.phoneNumber || "-"],
+      ["Username", employee.username || "-"],
+      ["Role", employee.role || "-"],
+      ["Registered", employee.createdAt ? new Date(employee.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "-"],
+      ["Report Period", rangeText],
+      ["Generated On", new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })]
+    ];
+
+    doc.setFontSize(10);
+    empInfo.forEach(([label, value]) => {
+      doc.setFont("helvetica", "bold");
+      doc.text(`${label}:`, 14, y);
+      const tw = doc.getTextWidth(`${label}: `);
+      doc.setFont("helvetica", "normal");
+      doc.text(String(value), 14 + tw + 2, y);
+      y += 6;
+    });
+    y += 6;
+
+    y += 4;
+
+    // ── Orders ──
     if (orders.length > 0) {
-      if (y > 240) { doc.addPage(); y = 20; }
-      doc.setFontSize(14); doc.setFont("helvetica", "bold");
-      doc.text(`Orders (${orders.length})`, 14, y); y += 8;
+      if (y > 200) { doc.addPage(); y = 20; }
+      doc.setFontSize(13);
+      doc.setFont("helvetica", "bold");
+      doc.text(`Orders (${orders.length})`, 14, y);
+      y += 8;
+
       autoTable(doc, {
-        startY: y, theme: "grid",
-        head: [["ID", "Customer", "Product", "Qty", "Amount", "Status", "Date"]],
+        startY: y,
+        theme: "grid",
+        head: [["ID", "Customer", "Mobile", "Product", "Qty", "Amount", "Advance", "Status", "Parcel", "Tracking", "Date"]],
         body: orders.map((o) => [
-          (o._id || "").slice(-6).toUpperCase(), o.customerName || "-",
-          o.productType || "-", o.numberOfUnits || 0,
-          `Rs.${o.totalAmount || 0}`, o.orderStatus || "-", formatDate(o.createdAt)
+          (o._id || "").slice(-6).toUpperCase(),
+          o.customerName || "-",
+          o.mobileNumber || "-",
+          o.productType === "Other" ? (o.customProductName || "Other") : (o.productType || "-"),
+          o.numberOfUnits || 0,
+          `Rs.${o.totalAmount || 0}`,
+          `Rs.${o.advanceAmount || 0}`,
+          o.orderStatus || "-",
+          o.parcelStatus || "-",
+          o.trackingId || "-",
+          formatDate(o.dateOfOrder || o.createdAt)
         ]),
-        headStyles: { fillColor: [6, 182, 212], fontSize: 9 },
-        bodyStyles: { fontSize: 8 }, styles: { cellPadding: 2 }
+        headStyles: { fillColor: [6, 182, 212], fontSize: 8, fontStyle: "bold" },
+        bodyStyles: { fontSize: 7 },
+        styles: { cellPadding: 1.5, overflow: "linebreak" },
+        columnStyles: {
+          0: { cellWidth: 16 },
+          1: { cellWidth: 22 },
+          2: { cellWidth: 20 },
+          3: { cellWidth: 22 },
+          6: { cellWidth: 18 },
+          9: { cellWidth: 22 }
+        },
+        margin: { left: 14 }
       });
       y = doc.lastAutoTable.finalY + 12;
     }
 
+    // ── Returns ──
     if (returns.length > 0) {
-      if (y > 240) { doc.addPage(); y = 20; }
-      doc.setFontSize(14); doc.setFont("helvetica", "bold");
-      doc.text(`Returns (${returns.length})`, 14, y); y += 8;
+      if (y > 200) { doc.addPage(); y = 20; }
+      doc.setFontSize(13);
+      doc.setFont("helvetica", "bold");
+      doc.text(`Returns (${returns.length})`, 14, y);
+      y += 8;
+
       autoTable(doc, {
-        startY: y, theme: "grid",
-        head: [["ID", "Customer", "Product", "Qty", "Reason", "Status", "Date"]],
+        startY: y,
+        theme: "grid",
+        head: [["ID", "Customer", "Mobile", "Product", "Qty", "Reason", "Description", "Status", "Date"]],
         body: returns.map((r) => [
-          (r._id || "").slice(-6).toUpperCase(), r.customerName || "-",
-          r.productType || "-", r.numberOfUnitsReturning || 0,
-          r.returnReason || "-", r.returnStatus || "-", formatDate(r.createdAt)
+          (r._id || "").slice(-6).toUpperCase(),
+          r.customerName || "-",
+          r.mobileNumber || "-",
+          r.productType === "Other" ? (r.customReason || "Other") : (r.productType || "-"),
+          r.numberOfUnitsReturning || 0,
+          r.returnReason || "-",
+          r.additionalDescription || "-",
+          r.returnStatus || "-",
+          formatDate(r.returnDate || r.createdAt)
         ]),
-        headStyles: { fillColor: [245, 158, 11], fontSize: 9 },
-        bodyStyles: { fontSize: 8 }, styles: { cellPadding: 2 }
+        headStyles: { fillColor: [245, 158, 11], fontSize: 8, fontStyle: "bold" },
+        bodyStyles: { fontSize: 7 },
+        styles: { cellPadding: 1.5, overflow: "linebreak" },
+        columnStyles: {
+          0: { cellWidth: 16 },
+          1: { cellWidth: 22 },
+          2: { cellWidth: 20 },
+          3: { cellWidth: 22 },
+          6: { cellWidth: 30 }
+        },
+        margin: { left: 14 }
       });
       y = doc.lastAutoTable.finalY + 12;
     }
 
+    // ── Calling Records ──
     if (callingRecords.length > 0) {
-      if (y > 240) { doc.addPage(); y = 20; }
-      doc.setFontSize(14); doc.setFont("helvetica", "bold");
-      doc.text(`Calling Records (${callingRecords.length})`, 14, y); y += 8;
+      if (y > 200) { doc.addPage(); y = 20; }
+      doc.setFontSize(13);
+      doc.setFont("helvetica", "bold");
+      doc.text(`Calling Records (${callingRecords.length})`, 14, y);
+      y += 8;
+
       autoTable(doc, {
-        startY: y, theme: "grid",
-        head: [["Date", "Outgoing", "Incoming", "Connected", "Interested", "Conversions", "Revenue"]],
+        startY: y,
+        theme: "grid",
+        head: [["Date", "Outgoing", "Incoming", "Connected", "Not Connected", "Interested", "Not Interested", "F/U Calls", "F/U Leads", "Total", "Conversions", "Revenue"]],
         body: callingRecords.map((c) => [
-          formatDate(c.date), c.outgoingCalls || 0, c.incomingCalls || 0,
-          c.connectedCalls || 0, c.interestedLeads || 0,
-          c.conversionsDone || 0, `Rs.${c.revenueGenerated || 0}`
+          formatDate(c.date),
+          c.outgoingCalls || 0,
+          c.incomingCalls || 0,
+          c.connectedCalls || 0,
+          c.notConnectedCalls || 0,
+          c.interestedLeads || 0,
+          c.notInterestedLeads || 0,
+          c.followUpCalls || 0,
+          c.followUpLeads || 0,
+          (c.outgoingCalls || 0) + (c.incomingCalls || 0) + (c.followUpCalls || 0),
+          c.conversionsDone || 0,
+          `Rs.${c.revenueGenerated || 0}`
         ]),
-        headStyles: { fillColor: [16, 185, 129], fontSize: 9 },
-        bodyStyles: { fontSize: 8 }, styles: { cellPadding: 2 }
+        headStyles: { fillColor: [16, 185, 129], fontSize: 7, fontStyle: "bold" },
+        bodyStyles: { fontSize: 7 },
+        styles: { cellPadding: 1.5 },
+        margin: { left: 14 }
       });
+    }
+
+    // ── Footer ──
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(150);
+      doc.text(`Page ${i} of ${pageCount}`, pageWidth / 2, doc.internal.pageSize.getHeight() - 8, { align: "center" });
+      doc.text("Confidential - Employee Report", 14, doc.internal.pageSize.getHeight() - 8);
     }
 
     doc.save(`${employee.name.replace(/\s+/g, "_")}_Report.pdf`);
