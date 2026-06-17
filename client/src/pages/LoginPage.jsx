@@ -21,8 +21,6 @@ const LoginPage = () => {
     setLoading(true);
     try {
       const decoded = await login(email, password, loginRole);
-      const loginPath = decoded.role === "admin" ? "/login/admin" : "/login";
-      localStorage.setItem("dashboard_login_path", loginPath);
       navigate(
         decoded.role === "employee" ? "/employee/dashboard" : "/admin/dashboard",
         { replace: true }

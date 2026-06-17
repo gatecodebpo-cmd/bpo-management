@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 import { api } from "../api/client";
 
 const initialState = {
@@ -10,6 +12,53 @@ const initialState = {
   state: "",
   distCordinate: "",
   followUp: "Convert"
+};
+
+const downloadCustomerPDF = (customers) => {
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  let y = 20;
+
+  doc.setFontSize(18);
+  doc.setFont("helvetica", "bold");
+  doc.text("My Customer Report", pageWidth / 2, y, { align: "center" });
+  y += 8;
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.text(`Generated: ${new Date().toLocaleDateString("en-IN")} | Total Customers: ${customers.length}`, pageWidth / 2, y, { align: "center" });
+  y += 10;
+
+  autoTable(doc, {
+    startY: y,
+    theme: "grid",
+    head: [["#", "Name", "Mobile", "Email", "Remark", "District", "State", "Follow Up", "Date"]],
+    body: customers.map((c, i) => [
+      i + 1,
+      c.customerName || "-",
+      c.mobile || "-",
+      c.email || "-",
+      c.remark || "-",
+      c.district || "-",
+      c.state || "-",
+      c.followUp || "-",
+      c.createdAt ? new Date(c.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "-"
+    ]),
+    headStyles: { fillColor: [139, 92, 246], fontSize: 8, fontStyle: "bold" },
+    bodyStyles: { fontSize: 7 },
+    styles: { cellPadding: 1.5 },
+    margin: { left: 14 }
+  });
+
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(150);
+    doc.text(`Page ${i} of ${pageCount}`, pageWidth / 2, doc.internal.pageSize.getHeight() - 8, { align: "center" });
+  }
+
+  doc.save("My_Customer_Report.pdf");
 };
 
 const EmployeeCustomerPage = () => {
@@ -103,6 +152,9 @@ const EmployeeCustomerPage = () => {
           <h2>Customer Information</h2>
           <p className="page-subtitle">Add or manage customer details</p>
         </div>
+        <button className="primary-btn" style={{ background: "#10b981" }} onClick={() => downloadCustomerPDF(customers)}>
+          Download PDF
+        </button>
       </div>
 
       <div className="glass-card" style={{ padding: 24, marginBottom: 24 }}>

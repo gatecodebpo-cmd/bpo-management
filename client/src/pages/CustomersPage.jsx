@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 import { api } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 
@@ -16,6 +18,75 @@ const buildCustomers = (orders) => {
     if (!c.lastOrder || d > new Date(c.lastOrder)) c.lastOrder = order.createdAt;
   });
   return Array.from(map.values()).sort((a, b) => b.totalAmount - a.totalAmount);
+};
+
+const downloadCRMPDF = (records) => {
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  let y = 20;
+
+  const grouped = {};
+  records.forEach((c) => {
+    const emp = c.employeeName || "Unknown";
+    if (!grouped[emp]) grouped[emp] = [];
+    grouped[emp].push(c);
+  });
+
+  doc.setFontSize(18);
+  doc.setFont("helvetica", "bold");
+  doc.text("CRM Customer Report", pageWidth / 2, y, { align: "center" });
+  y += 8;
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.text(`Generated: ${new Date().toLocaleDateString("en-IN")} | Total Customers: ${records.length}`, pageWidth / 2, y, { align: "center" });
+  y += 10;
+
+  const empEntries = Object.entries(grouped);
+  empEntries.forEach(([empName, customers], empIdx) => {
+    if (y > 240) { doc.addPage(); y = 20; }
+
+    doc.setDrawColor(139, 92, 246);
+    doc.setFillColor(139, 92, 246);
+    doc.roundedRect(14, y, pageWidth - 28, 9, 2, 2, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.text(`${empName} (${customers.length})`, 18, y + 6.5);
+    y += 14;
+    doc.setTextColor(0, 0, 0);
+
+    autoTable(doc, {
+      startY: y,
+      theme: "grid",
+      head: [["Name", "Mobile", "Email", "Remark", "District", "State", "Follow Up", "Date"]],
+      body: customers.map((c) => [
+        c.customerName || "-",
+        c.mobile || "-",
+        c.email || "-",
+        c.remark || "-",
+        c.district || "-",
+        c.state || "-",
+        c.followUp || "-",
+        c.createdAt ? new Date(c.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "-"
+      ]),
+      headStyles: { fillColor: [139, 92, 246], fontSize: 8, fontStyle: "bold" },
+      bodyStyles: { fontSize: 7 },
+      styles: { cellPadding: 1.5 },
+      margin: { left: 14 }
+    });
+    y = doc.lastAutoTable.finalY + 10;
+  });
+
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(150);
+    doc.text(`Page ${i} of ${pageCount}`, pageWidth / 2, doc.internal.pageSize.getHeight() - 8, { align: "center" });
+  }
+
+  doc.save("CRM_Customer_Report.pdf");
 };
 
 const CustomersPage = () => {
@@ -186,6 +257,9 @@ const CustomersPage = () => {
           <div className="table-shell glass-card">
             <div className="table-header">
               <h3>CRM Records ({filteredCrm.length}/{crmRecords.length})</h3>
+              <button className="primary-btn" style={{ background: "#10b981", padding: "8px 16px", fontSize: 13 }} onClick={() => downloadCRMPDF(crmRecords)}>
+                Download PDF
+              </button>
             </div>
             <div className="table-scroll">
               <table>

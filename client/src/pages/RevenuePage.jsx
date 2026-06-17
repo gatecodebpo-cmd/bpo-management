@@ -14,11 +14,11 @@ const PackageSmallIcon = () => (
 );
 
 const ChevronLeft = () => (
-  <svg viewBox="0 0 24 24" style={{ width: 18, height: 18 }}><polyline points="15 18 9 12 15 6"/></svg>
+  <svg viewBox="0 0 24 24" style={{ width: 18, height: 18 }} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
 );
 
 const ChevronRight = () => (
-  <svg viewBox="0 0 24 24" style={{ width: 18, height: 18 }}><polyline points="9 18 15 12 9 6"/></svg>
+  <svg viewBox="0 0 24 24" style={{ width: 18, height: 18 }} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
 );
 
 const formatINR = (n) =>

@@ -33,7 +33,7 @@ const downloadEmployeePDF = async (employee, startDate, endDate) => {
     if (startDate) params.startDate = startDate;
     if (endDate) params.endDate = endDate;
     const res = await api.get(`/admin/employee-details/${employee._id}`, { params });
-    const { orders, returns, callingRecords } = res.data.data;
+    const { orders, returns, callingRecords, customers } = res.data.data;
 
     const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
     const pageWidth = doc.internal.pageSize.getWidth();
@@ -192,6 +192,37 @@ const downloadEmployeePDF = async (employee, startDate, endDate) => {
         styles: { cellPadding: 1.5 },
         margin: { left: 14 }
       });
+      y = doc.lastAutoTable.finalY + 12;
+    }
+
+    // ── CRM Customers ──
+    if (customers.length > 0) {
+      if (y > 200) { doc.addPage(); y = 20; }
+      doc.setFontSize(13);
+      doc.setFont("helvetica", "bold");
+      doc.text(`CRM Customers (${customers.length})`, 14, y);
+      y += 8;
+
+      autoTable(doc, {
+        startY: y,
+        theme: "grid",
+        head: [["Name", "Mobile", "Email", "District", "State", "Follow Up", "Remark", "Date"]],
+        body: customers.map((c) => [
+          c.customerName || "-",
+          c.mobile || "-",
+          c.email || "-",
+          c.district || "-",
+          c.state || "-",
+          c.followUp || "-",
+          c.remark || "-",
+          formatDate(c.createdAt)
+        ]),
+        headStyles: { fillColor: [139, 92, 246], fontSize: 8, fontStyle: "bold" },
+        bodyStyles: { fontSize: 7 },
+        styles: { cellPadding: 1.5, overflow: "linebreak" },
+        margin: { left: 14 }
+      });
+      y = doc.lastAutoTable.finalY + 12;
     }
 
     // ── Footer ──
@@ -420,6 +451,31 @@ const EmployeeDetailsPage = () => {
                           <td>{r.returnReason || "-"}</td>
                           <td>{statusBadge(r.returnStatus)}</td>
                           <td>{formatDateTime(r.createdAt)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div className="table-shell glass-card" style={{ padding: 20, marginBottom: 20 }}>
+                <div className="table-header"><h3>CRM Customers ({details.customers.length})</h3></div>
+                <div className="table-scroll">
+                  <table>
+                    <thead>
+                      <tr><th>Name</th><th>Mobile</th><th>Email</th><th>District</th><th>State</th><th>Follow Up</th><th>Date</th></tr>
+                    </thead>
+                    <tbody>
+                      {details.customers.length === 0 && <tr><td colSpan={7} style={{ textAlign: "center", padding: 20, color: "#94a3b8" }}>No CRM customers</td></tr>}
+                      {details.customers.map((c) => (
+                        <tr key={c._id}>
+                          <td style={{ fontWeight: 600 }}>{c.customerName || "-"}</td>
+                          <td>{c.mobile || "-"}</td>
+                          <td>{c.email || "-"}</td>
+                          <td>{c.district || "-"}</td>
+                          <td>{c.state || "-"}</td>
+                          <td>{c.followUp || "-"}</td>
+                          <td>{formatDateTime(c.createdAt)}</td>
                         </tr>
                       ))}
                     </tbody>

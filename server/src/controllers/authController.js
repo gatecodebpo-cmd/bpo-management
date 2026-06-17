@@ -195,12 +195,15 @@ export const loginAdmin = async (req, res, next) => {
         return res.status(403).json({ message: "Only Employee users can login here." });
       }
 
-      user.tokenVersion = Date.now();
-      await user.save();
+      const newTokenVersion = Date.now();
+      await User.updateOne(
+        { _id: user._id },
+        { $set: { tokenVersion: newTokenVersion } }
+      );
 
       return res.status(200).json({
         message: "Login successful",
-        token: signToken({ id: user._id, name: user.name, email: user.email, role: userRole, tokenVersion: user.tokenVersion }),
+        token: signToken({ id: user._id, name: user.name, email: user.email, role: userRole, tokenVersion: newTokenVersion }),
         user: { id: user._id, name: user.name, email: user.email, role: userRole }
       });
     }

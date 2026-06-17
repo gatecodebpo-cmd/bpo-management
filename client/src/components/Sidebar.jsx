@@ -32,8 +32,8 @@ const PackageIcon = () => (
   <svg viewBox="0 0 24 24"><path d="M16.5 9.4l-9-5.19M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 002 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.29 7 12 12 20.71 7"/><line x1="12" y1="22" x2="12" y2="12"/></svg>
 );
 
-const ChevronDown = () => (
-  <svg viewBox="0 0 24 24" style={{ width: 14, height: 14, marginLeft: "auto" }}><polyline points="6 9 12 15 18 9"/></svg>
+const ChevronDown = ({ open }) => (
+  <svg viewBox="0 0 24 24" style={{ width: 14, height: 14, marginLeft: "auto", transform: open ? "rotate(0deg)" : "rotate(180deg)", transition: "transform 0.2s" }} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
 );
 
 const ClockIcon = () => (
@@ -120,7 +120,7 @@ const Sidebar = () => {
             <button className="sidebar-link sidebar-dropdown-btn" onClick={() => setOrdersOpen(!ordersOpen)}>
               <span className="sidebar-icon"><OrderIcon /></span>
               Orders
-              <ChevronDown />
+              <ChevronDown open={ordersOpen} />
             </button>
             {ordersOpen && (
               <div className="sidebar-submenu">
@@ -134,7 +134,7 @@ const Sidebar = () => {
             <button className="sidebar-link sidebar-dropdown-btn" onClick={() => setReturnsOpen(!returnsOpen)}>
               <span className="sidebar-icon"><ReturnIcon /></span>
               Returns
-              <ChevronDown />
+              <ChevronDown open={returnsOpen} />
             </button>
             {returnsOpen && (
               <div className="sidebar-submenu">
@@ -151,7 +151,7 @@ const Sidebar = () => {
                 User Details
               </NavLink>
               <button className="sidebar-dropdown-chevron" onClick={() => setUsersOpen(!usersOpen)}>
-                <ChevronDown />
+                <ChevronDown open={usersOpen} />
               </button>
             </div>
             {usersOpen && (

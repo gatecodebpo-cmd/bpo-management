@@ -31,8 +31,7 @@ const RootRedirect = () => {
   const { user, loading } = useAuth();
   if (loading) return null;
   if (!user) {
-    const loginPath = localStorage.getItem("dashboard_login_path") || "/login";
-    return <Navigate to={loginPath} replace />;
+    return <Navigate to="/login" replace />;
   }
   if (user.role === "employee") return <Navigate to="/employee/dashboard" replace />;
   return <Navigate to="/admin/dashboard" replace />;

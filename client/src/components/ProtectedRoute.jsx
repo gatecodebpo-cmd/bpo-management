@@ -7,8 +7,7 @@ const ProtectedRoute = ({ children, role }) => {
   if (loading) return null;
 
   if (!user || user.guest) {
-    const loginPath = localStorage.getItem("dashboard_login_path") || "/login";
-    return <Navigate to={loginPath} replace />;
+    return <Navigate to="/login" replace />;
   }
 
   if (role && user.role && user.role !== role) {

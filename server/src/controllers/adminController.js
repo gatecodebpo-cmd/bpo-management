@@ -2,6 +2,7 @@ import { isDatabaseReady } from "../config/db.js";
 import { Order } from "../models/Order.js";
 import { ReturnRequest } from "../models/ReturnRequest.js";
 import { CallingRecord } from "../models/CallingRecord.js";
+import { Customer } from "../models/Customer.js";
 import { User } from "../models/User.js";
 
 const getDateRange = (filter, startDate, endDate) => {
@@ -154,11 +155,13 @@ export const getEmployeeDetails = async (req, res, next) => {
     const orderFilter = { employeeId: id, ...buildDateFilter(startDate, endDate) };
     const returnFilter = { employeeId: id, ...buildDateFilter(startDate, endDate) };
     const callFilter = { employeeId: id, ...buildCallingDateFilter(startDate, endDate) };
+    const customerFilter = { employeeId: id, ...buildDateFilter(startDate, endDate) };
 
-    const [orders, returns, callingRecords] = await Promise.all([
+    const [orders, returns, callingRecords, customers] = await Promise.all([
       Order.find(orderFilter).sort({ createdAt: -1 }),
       ReturnRequest.find(returnFilter).sort({ createdAt: -1 }),
-      CallingRecord.find(callFilter).sort({ date: -1, createdAt: -1 })
+      CallingRecord.find(callFilter).sort({ date: -1, createdAt: -1 }),
+      Customer.find(customerFilter).sort({ createdAt: -1 })
     ]);
 
     return res.status(200).json({
@@ -166,7 +169,8 @@ export const getEmployeeDetails = async (req, res, next) => {
         employee,
         orders,
         returns,
-        callingRecords
+        callingRecords,
+        customers
       }
     });
   } catch (error) {
