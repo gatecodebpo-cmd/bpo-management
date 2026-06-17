@@ -10,8 +10,8 @@ const debugLog = (msg) => {
 
 const getFixedAdminUser = () => ({
   id: "admin-fallback",
-  name: process.env.ADMIN_NAME || "Uttam Admin",
-  email: process.env.ADMIN_EMAIL || "uttam306115@gmail.com",
+  name: process.env.ADMIN_NAME || "RMAX Admin",
+  email: process.env.ADMIN_EMAIL || "sales@rmaxiot.in",
   role: "admin"
 });
 
@@ -46,7 +46,7 @@ export const protect = async (req, res, next) => {
         return res.status(401).json({ message: "Session expired. You have been logged out from another device." });
       }
 
-      const adminEmail = process.env.ADMIN_EMAIL || "uttam306115@gmail.com";
+      const adminEmail = process.env.ADMIN_EMAIL || "sales@rmaxiot.in";
       if (user.email?.toLowerCase() === adminEmail.toLowerCase()) {
         user.role = "admin";
       }
@@ -54,7 +54,7 @@ export const protect = async (req, res, next) => {
       return next();
     }
 
-    const adminEmail = process.env.ADMIN_EMAIL || "uttam306115@gmail.com";
+    const adminEmail = process.env.ADMIN_EMAIL || "sales@rmaxiot.in";
     if (decoded.role === "admin" || decoded.email === adminEmail) {
       req.user = getFixedAdminUser();
       return next();
@@ -72,7 +72,7 @@ export const adminOnly = (req, res, next) => {
   if (token) {
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      const adminEmail = process.env.ADMIN_EMAIL || "uttam306115@gmail.com";
+      const adminEmail = process.env.ADMIN_EMAIL || "sales@rmaxiot.in";
       debugLog(`adminOnly JWT check: role=${decoded.role}, email=${decoded.email}, adminEmail=${adminEmail}`);
       if (decoded.role === "admin" || decoded.email === adminEmail) {
         return next();
@@ -87,7 +87,7 @@ export const adminOnly = (req, res, next) => {
 
   // Fallback: check req.user
   if (req.user) {
-    const adminEmail = process.env.ADMIN_EMAIL || "uttam306115@gmail.com";
+    const adminEmail = process.env.ADMIN_EMAIL || "sales@rmaxiot.in";
     debugLog(`adminOnly fallback: user.role=${req.user.role}, user.email=${req.user.email}`);
     if (req.user.role === "admin" || req.user.email?.toLowerCase() === adminEmail.toLowerCase()) {
       return next();

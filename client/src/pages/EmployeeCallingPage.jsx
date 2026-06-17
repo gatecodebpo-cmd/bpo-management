@@ -23,7 +23,6 @@ const initialState = {
   outgoingCalls: "",
   incomingCalls: "",
   connectedCalls: "",
-  notConnectedCalls: "",
   interestedLeads: "",
   notInterestedLeads: "",
   followUpCalls: "",
@@ -91,7 +90,7 @@ const EmployeeCallingPage = () => {
         outgoingCalls: Number(form.outgoingCalls) || 0,
         incomingCalls: Number(form.incomingCalls) || 0,
         connectedCalls: Number(form.connectedCalls) || 0,
-        notConnectedCalls: Number(form.notConnectedCalls) || 0,
+        notConnectedCalls: Math.max((Number(form.outgoingCalls) || 0) - (Number(form.connectedCalls) || 0), 0),
         interestedLeads: Number(form.interestedLeads) || 0,
         notInterestedLeads: Number(form.notInterestedLeads) || 0,
         followUpCalls: Number(form.followUpCalls) || 0,
@@ -118,7 +117,7 @@ const EmployeeCallingPage = () => {
         outgoingCalls: Number(form.outgoingCalls) || 0,
         incomingCalls: Number(form.incomingCalls) || 0,
         connectedCalls: Number(form.connectedCalls) || 0,
-        notConnectedCalls: Number(form.notConnectedCalls) || 0,
+        notConnectedCalls: Math.max((Number(form.outgoingCalls) || 0) - (Number(form.connectedCalls) || 0), 0),
         interestedLeads: Number(form.interestedLeads) || 0,
         notInterestedLeads: Number(form.notInterestedLeads) || 0,
         followUpCalls: Number(form.followUpCalls) || 0,
@@ -148,7 +147,6 @@ const EmployeeCallingPage = () => {
       outgoingCalls: record.outgoingCalls || "",
       incomingCalls: record.incomingCalls || "",
       connectedCalls: record.connectedCalls || "",
-      notConnectedCalls: record.notConnectedCalls || "",
       interestedLeads: record.interestedLeads || "",
       notInterestedLeads: record.notInterestedLeads || "",
       followUpCalls: record.followUpCalls || "",
@@ -195,7 +193,7 @@ const EmployeeCallingPage = () => {
           </label>
           <label className="field-wrap">
             <span>Not Connected Calls</span>
-            <input type="number" name="notConnectedCalls" value={form.notConnectedCalls} onChange={handleChange} min="0" />
+            <input type="number" value={Math.max((Number(form.outgoingCalls) || 0) - (Number(form.connectedCalls) || 0), 0)} readOnly disabled style={{ fontWeight: 700, color: "var(--primary)" }} />
           </label>
           <label className="field-wrap">
             <span>Interested Leads</span>

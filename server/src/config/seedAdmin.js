@@ -1,9 +1,9 @@
 import bcrypt from "bcryptjs";
 import { User } from "../models/User.js";
 
-const DEFAULT_ADMIN_EMAIL = "uttam306115@gmail.com";
-const DEFAULT_ADMIN_PASSWORD = "uttam@2004";
-const DEFAULT_ADMIN_NAME = "Uttam Admin";
+const DEFAULT_ADMIN_EMAIL = "sales@rmaxiot.in";
+const DEFAULT_ADMIN_PASSWORD = "rmax@2026";
+const DEFAULT_ADMIN_NAME = "RMAX Admin";
 
 export const ensureFixedAdminUser = async () => {
   const adminEmail = process.env.ADMIN_EMAIL || DEFAULT_ADMIN_EMAIL;

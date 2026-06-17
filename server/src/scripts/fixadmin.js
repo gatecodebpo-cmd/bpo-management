@@ -12,7 +12,7 @@ const run = async () => {
   await mongoose.connect(mongoUri, { serverSelectionTimeoutMS: 10000 });
   const db = mongoose.connection.db;
 
-  const adminEmail = process.env.ADMIN_EMAIL || "uttam306115@gmail.com";
+  const adminEmail = process.env.ADMIN_EMAIL || "sales@rmaxiot.in";
 
   const existing = await db.collection("users").findOne({ email: adminEmail });
   if (existing) {
@@ -25,10 +25,10 @@ const run = async () => {
   } else {
     console.log("Admin user not found in DB — creating it");
     const bcrypt = await import("bcryptjs");
-    const password = process.env.ADMIN_PASSWORD || "uttam@2004";
+    const password = process.env.ADMIN_PASSWORD || "rmax@2026";
     const hashed = await bcrypt.hash(password, 10);
     await db.collection("users").insertOne({
-      name: process.env.ADMIN_NAME || "Uttam Admin",
+      name: process.env.ADMIN_NAME || "RMAX Admin",
       email: adminEmail,
       password: hashed,
       role: "admin",

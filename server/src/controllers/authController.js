@@ -5,14 +5,14 @@ import { User } from "../models/User.js";
 
 const getFixedAdminUser = () => ({
   id: "admin-fallback",
-  name: process.env.ADMIN_NAME || "Uttam Admin",
-  email: process.env.ADMIN_EMAIL || "uttam306115@gmail.com",
+  name: process.env.ADMIN_NAME || "RMAX Admin",
+  email: process.env.ADMIN_EMAIL || "sales@rmaxiot.in",
   role: "admin"
 });
 
 const isFixedAdminCredentials = (email, password) =>
-  email === (process.env.ADMIN_EMAIL || "uttam306115@gmail.com") &&
-  password === (process.env.ADMIN_PASSWORD || "uttam@2004");
+  email === (process.env.ADMIN_EMAIL || "sales@rmaxiot.in") &&
+  password === (process.env.ADMIN_PASSWORD || "rmax@2026");
 
 const signToken = (user) =>
   jwt.sign(
@@ -185,7 +185,7 @@ export const loginAdmin = async (req, res, next) => {
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
-      const adminEmail = (process.env.ADMIN_EMAIL || "uttam306115@gmail.com").toLowerCase();
+      const adminEmail = (process.env.ADMIN_EMAIL || "sales@rmaxiot.in").toLowerCase();
       const userRole = user.email.toLowerCase() === adminEmail ? "admin" : user.role;
 
       if (role === "admin" && userRole !== "admin") {

@@ -10,6 +10,7 @@ const customerSchema = new mongoose.Schema(
     remark: { type: String, trim: true, default: "" },
     district: { type: String, trim: true, default: "", match: /^[a-zA-Z\s]*$/ },
     state: { type: String, trim: true, default: "", match: /^[a-zA-Z\s]*$/ },
+    distCordinate: { type: String, enum: ["", "CSP Incharge", "DC", "SH", "NH"], default: "" },
     followUp: { type: String, enum: ["Convert", "Converted"], default: "Convert" }
   },
   { timestamps: true }

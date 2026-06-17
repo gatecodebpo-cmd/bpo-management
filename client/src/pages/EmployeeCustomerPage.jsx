@@ -8,6 +8,7 @@ const initialState = {
   remark: "",
   district: "",
   state: "",
+  distCordinate: "",
   followUp: "Convert"
 };
 
@@ -89,6 +90,7 @@ const EmployeeCustomerPage = () => {
       remark: customer.remark || "",
       district: customer.district || "",
       state: customer.state || "",
+      distCordinate: customer.distCordinate || "",
       followUp: customer.followUp || "Convert"
     });
     setEditingId(customer._id);
@@ -131,6 +133,16 @@ const EmployeeCustomerPage = () => {
           <label className="field-wrap">
             <span>State</span>
             <input type="text" name="state" value={form.state} onChange={handleChange} placeholder="Enter state" />
+          </label>
+          <label className="field-wrap">
+            <span>Dist Cordinate</span>
+            <select name="distCordinate" value={form.distCordinate} onChange={handleChange}>
+              <option value="">Select</option>
+              <option value="CSP Incharge">CSP Incharge</option>
+              <option value="DC">DC</option>
+              <option value="SH">SH</option>
+              <option value="NH">NH</option>
+            </select>
           </label>
           <label className="field-wrap">
             <span>Follow Up</span>
@@ -188,6 +200,7 @@ const EmployeeCustomerPage = () => {
                 <th>REMARK</th>
                 <th>DISTRICT</th>
                 <th>STATE</th>
+                <th>DIST CORDINATE</th>
                 <th>FOLLOW UP</th>
                 <th>DATE</th>
                 <th>ACTION</th>
@@ -196,14 +209,14 @@ const EmployeeCustomerPage = () => {
             <tbody>
               {loading && (
                 <tr>
-                  <td colSpan={9} style={{ textAlign: "center", padding: 24, color: "var(--text-muted)" }}>
+                  <td colSpan={10} style={{ textAlign: "center", padding: 24, color: "var(--text-muted)" }}>
                     Loading...
                   </td>
                 </tr>
               )}
               {!loading && filtered.length === 0 && (
                 <tr>
-                  <td colSpan={9} style={{ textAlign: "center", padding: 24, color: "var(--text-muted)" }}>
+                  <td colSpan={10} style={{ textAlign: "center", padding: 24, color: "var(--text-muted)" }}>
                     {customers.length === 0 ? "No customer records found" : "No records match the selected filter"}
                   </td>
                 </tr>
@@ -216,6 +229,7 @@ const EmployeeCustomerPage = () => {
                   <td>{c.remark || "-"}</td>
                   <td>{c.district || "-"}</td>
                   <td>{c.state || "-"}</td>
+                  <td>{c.distCordinate || "-"}</td>
                   <td>
                     <span style={{
                       padding: "2px 10px", borderRadius: 12, fontSize: 12, fontWeight: 600,

@@ -49,7 +49,7 @@ const EmployeeSidebar = () => {
       <div className={`sidebar-overlay ${sidebarOpen ? "active" : ""}`} onClick={closeSidebar} />
       <aside className={`sidebar ${sidebarOpen ? "sidebar-open" : ""}`}>
         <div className="sidebar-header">
-          <div className="sidebar-logo">DB</div>
+          <div className="sidebar-logo">RA</div>
           <div className="sidebar-header-info">
             <h3>Employee</h3>
             <span>Dashboard</span>
