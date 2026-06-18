@@ -31,7 +31,12 @@ const orderSchema = new mongoose.Schema(
       default: "Pending"
     },
     trackingId: { type: String, default: "" },
-    courierCompany: { type: String, default: "" }
+    courierCompany: { type: String, default: "" },
+    bankName: {
+      type: String,
+      enum: ["SBI", "BOB", "BOM", "MGB", "UPGB", "MPGB"],
+      default: ""
+    }
   },
   { timestamps: true }
 );

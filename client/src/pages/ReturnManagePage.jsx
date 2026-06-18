@@ -118,6 +118,10 @@ const ReturnManagePage = () => {
   const [editRow, setEditRow] = useState(null);
 
   useEffect(() => {
+    if (editRow) window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [editRow]);
+
+  useEffect(() => {
     let mounted = true;
     setLoading(true);
     fetchReturns().then((data) => { if (mounted) { setReturns(data); setLoading(false); } }).catch((e) => { if (mounted) { setLoading(false); console.error("Failed to load returns:", e); } });

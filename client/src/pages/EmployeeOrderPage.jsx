@@ -17,6 +17,7 @@ const initialState = {
   parcelStatus: "Pending",
   trackingId: "",
   courierCompany: "",
+  bankName: "",
 };
 
 const allowedImageTypes = ["image/jpeg", "image/jpg", "image/png"];
@@ -139,6 +140,7 @@ const EmployeeOrderPage = () => {
       payload.append("parcelStatus", form.parcelStatus);
       payload.append("trackingId", form.trackingId);
       payload.append("courierCompany", form.courierCompany);
+      payload.append("bankName", form.bankName);
       if (paymentFile) payload.append("paymentScreenshot", paymentFile);
       await api.post("/orders", payload);
       setMessage("Order submitted successfully.");
@@ -280,6 +282,17 @@ const EmployeeOrderPage = () => {
           <div className="form-section">
             <h3 className="form-section-title">Additional Details</h3>
             <div className="form-section-content">
+              <Field label="Bank Name">
+                <select value={form.bankName} onChange={(e) => onChange("bankName", e.target.value)}>
+                  <option value="">Select Bank</option>
+                  <option value="SBI">SBI</option>
+                  <option value="BOB">BOB</option>
+                  <option value="BOM">BOM</option>
+                  <option value="MGB">MGB</option>
+                  <option value="UPGB">UPGB</option>
+                  <option value="MPGB">MPGB</option>
+                </select>
+              </Field>
               <Field label="Description">
                 <textarea
                   value={form.description}

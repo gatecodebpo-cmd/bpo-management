@@ -25,27 +25,4 @@ export const ensureFixedAdminUser = async () => {
   console.log(`Fixed admin user ready: ${adminEmail}`);
 };
 
-export const ensureFixedEmployeeUser = async () => {
-  const employeeEmail = "karan2001@gmail.com";
-  const employeePassword = "karan";
-  const employeeName = "Karan Employee";
 
-  const hashedPassword = await bcrypt.hash(employeePassword, 10);
-  await User.findOneAndUpdate(
-    { email: employeeEmail },
-    {
-      $set: {
-        name: employeeName,
-        email: employeeEmail,
-        password: hashedPassword,
-        role: "employee"
-      },
-      $setOnInsert: {
-        username: "karan"
-      }
-    },
-    { upsert: true, returnDocument: "after" }
-  );
-
-  console.log(`Fixed employee user ready: ${employeeEmail}`);
-};

@@ -98,6 +98,12 @@ const EmployeeDashboardPage = () => {
   const [editOrder, setEditOrder] = useState(null);
   const [editReturn, setEditReturn] = useState(null);
 
+  useEffect(() => {
+    if (editOrder || editReturn) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [editOrder, editReturn]);
+
   const orderEditFields = [
     { key: "customerName", label: "Customer Name" },
     { key: "mobileNumber", label: "Mobile Number" },
@@ -109,6 +115,10 @@ const EmployeeDashboardPage = () => {
     { key: "amount", label: "Amount (per unit)", type: "number" },
     { key: "advanceAmount", label: "Advance Amount", type: "number" },
     { key: "orderStatus", label: "Status", type: "select", options: ["Pending", "Approved", "Processing", "Delivered", "Cancelled"] },
+    { key: "parcelStatus", label: "Parcel Status", type: "select", options: ["Pending", "Process", "Parcel", "Packed", "Dispatched", "Delivered"] },
+    { key: "trackingId", label: "Tracking ID" },
+    { key: "courierCompany", label: "Courier Company" },
+    { key: "bankName", label: "Bank Name", type: "select", options: ["SBI", "BOB", "BOM", "MGB", "UPGB", "MPGB"] },
   ];
 
   const returnEditFields = [

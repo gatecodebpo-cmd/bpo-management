@@ -38,7 +38,7 @@ const RootRedirect = () => {
 };
 
 const AdminLayout = () => (
-  <ProtectedRoute>
+  <ProtectedRoute role="admin">
     <SidebarProvider>
       <DashboardLayout />
     </SidebarProvider>

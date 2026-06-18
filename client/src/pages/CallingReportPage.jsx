@@ -22,15 +22,19 @@ const formatDate = (d) =>
 const downloadCallingPDF = (records, filter, startDate, endDate) => {
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
   const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
   let y = 20;
 
   doc.setFontSize(18);
   doc.setFont("helvetica", "bold");
+  doc.setTextColor(30, 30, 30);
   doc.text("Calling Report", pageWidth / 2, y, { align: "center" });
   y += 8;
+
+  const period = startDate || endDate ? `${startDate || "..."} to ${endDate || "..."}` : formatLabel(filter);
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
-  const period = startDate || endDate ? `${startDate || "..."} to ${endDate || "..."}` : filter;
+  doc.setTextColor(100);
   doc.text(`Period: ${period} | Total Records: ${records.length}`, pageWidth / 2, y, { align: "center" });
   y += 10;
 
@@ -50,14 +54,50 @@ const downloadCallingPDF = (records, filter, startDate, endDate) => {
     `Rs.${r.revenueGenerated || 0}`
   ]);
 
+  const totalsRow = [
+    "TOTAL", "-",
+    records.reduce((s, r) => s + (r.outgoingCalls || 0), 0),
+    records.reduce((s, r) => s + (r.incomingCalls || 0), 0),
+    records.reduce((s, r) => s + (r.connectedCalls || 0), 0),
+    records.reduce((s, r) => s + (r.notConnectedCalls || 0), 0),
+    records.reduce((s, r) => s + (r.interestedLeads || 0), 0),
+    records.reduce((s, r) => s + (r.notInterestedLeads || 0), 0),
+    records.reduce((s, r) => s + (r.followUpCalls || 0), 0),
+    records.reduce((s, r) => s + (r.followUpLeads || 0), 0),
+    records.reduce((s, r) => s + (r.outgoingCalls || 0) + (r.incomingCalls || 0) + (r.followUpCalls || 0), 0),
+    records.reduce((s, r) => s + (r.conversionsDone || 0), 0),
+    `Rs.${records.reduce((s, r) => s + (r.revenueGenerated || 0), 0).toLocaleString("en-IN")}`
+  ];
+
   autoTable(doc, {
     startY: y, theme: "grid",
-    head: [["Date", "Executive", "Outgoing", "Incoming", "Connected", "Not Conn.", "Interested", "Not Int.", "F/U Calls", "F/U Leads", "Total", "Conv.", "Revenue"]],
-    body: rows,
-    headStyles: { fillColor: [6, 182, 212], fontSize: 7 },
-    bodyStyles: { fontSize: 6 },
-    styles: { cellPadding: 1.5 }
+    head: [["Date", "Executive", "Outgoing", "Incoming", "Connected", "Not Conn.", "Interested", "Not Int.", "F/U Calls", "F/U Leads", "Total Calls", "Conv.", "Revenue"]],
+    body: [...rows, totalsRow],
+    headStyles: { fillColor: [6, 182, 212], fontSize: 7, fontStyle: "bold", textColor: 255 },
+    bodyStyles: { fontSize: 7, textColor: [30, 30, 30] },
+    styles: { cellPadding: 1.5, halign: "center" },
+    columnStyles: {
+      0: { cellWidth: 24, halign: "left" },
+      1: { cellWidth: 30, halign: "left" },
+      12: { halign: "right" }
+    },
+    didParseCell: function (data) {
+      if (data.row.index === rows.length) {
+        data.cell.styles.fontStyle = "bold";
+        data.cell.styles.fillColor = [240, 240, 240];
+      }
+    },
+    margin: { left: 14 }
   });
+
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(150);
+    doc.text(`Page ${i} of ${pageCount}`, pageWidth / 2, pageHeight - 8, { align: "center" });
+  }
 
   doc.save("Calling_Report.pdf");
 };
@@ -132,12 +172,14 @@ const CallingReportPage = () => {
       acc.followUpLeads += r.followUpLeads || 0;
       acc.conversionsDone += r.conversionsDone || 0;
       acc.revenueGenerated += r.revenueGenerated || 0;
+      acc.totalCalls += (r.outgoingCalls || 0) + (r.incomingCalls || 0) + (r.followUpCalls || 0);
       return acc;
     },
     {
       outgoingCalls: 0, incomingCalls: 0, connectedCalls: 0,
       notConnectedCalls: 0, interestedLeads: 0, notInterestedLeads: 0,
-      followUpCalls: 0, followUpLeads: 0, conversionsDone: 0, revenueGenerated: 0
+      followUpCalls: 0, followUpLeads: 0, conversionsDone: 0, revenueGenerated: 0,
+      totalCalls: 0
     }
   );
 
@@ -195,6 +237,7 @@ const CallingReportPage = () => {
 
       {records.length > 0 && (
         <div style={{ display: "flex", gap: 12, marginBottom: 20, flexWrap: "wrap" }}>
+          <SummaryCard label="Total Calls" value={totals.totalCalls} color="#0ea5e9" />
           <SummaryCard label="Total Outgoing" value={totals.outgoingCalls} color="#3b82f6" />
           <SummaryCard label="Total Incoming" value={totals.incomingCalls} color="#8b5cf6" />
           <SummaryCard label="Connected" value={totals.connectedCalls} color="#22c55e" />

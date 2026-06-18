@@ -57,6 +57,9 @@ const downloadEmployeePDF = async (employee, startDate, endDate) => {
     y += 8;
 
     const rangeText = startDate || endDate ? `${startDate || "..."} to ${endDate || "..."}` : "All Time";
+    const totalSales = orders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+    const totalRevenue = callingRecords.reduce((sum, c) => sum + (c.revenueGenerated || 0), 0);
+
     const empInfo = [
       ["Employee ID", (employee._id || "").slice(-8).toUpperCase()],
       ["Name", employee.name || "-"],
@@ -64,6 +67,8 @@ const downloadEmployeePDF = async (employee, startDate, endDate) => {
       ["Phone", employee.phoneNumber || "-"],
       ["Username", employee.username || "-"],
       ["Role", employee.role || "-"],
+      ["Total Sales", `Rs.${totalSales.toLocaleString("en-IN")}`],
+      ["Total Revenue", `Rs.${totalRevenue.toLocaleString("en-IN")}`],
       ["Registered", employee.createdAt ? new Date(employee.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "-"],
       ["Report Period", rangeText],
       ["Generated On", new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })]
@@ -225,6 +230,44 @@ const downloadEmployeePDF = async (employee, startDate, endDate) => {
       y = doc.lastAutoTable.finalY + 12;
     }
 
+    // ── Summary ──
+    if (y > 220) { doc.addPage(); y = 20; }
+    doc.setFontSize(13);
+    doc.setFont("helvetica", "bold");
+    doc.text("Sales & Revenue Summary", 14, y);
+    y += 8;
+
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.text("Total Sales:", 14, y);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Rs.${totalSales.toLocaleString("en-IN")}`, 50, y);
+    y += 6;
+
+    doc.setFont("helvetica", "bold");
+    doc.text("Total Revenue:", 14, y);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Rs.${totalRevenue.toLocaleString("en-IN")}`, 50, y);
+    y += 6;
+
+    doc.setFont("helvetica", "bold");
+    doc.text("Total Orders:", 14, y);
+    doc.setFont("helvetica", "normal");
+    doc.text(String(orders.length), 50, y);
+    y += 6;
+
+    doc.setFont("helvetica", "bold");
+    doc.text("Total Returns:", 14, y);
+    doc.setFont("helvetica", "normal");
+    doc.text(String(returns.length), 50, y);
+    y += 6;
+
+    doc.setFont("helvetica", "bold");
+    doc.text("Total Calling Records:", 14, y);
+    doc.setFont("helvetica", "normal");
+    doc.text(String(callingRecords.length), 50, y);
+    y += 10;
+
     // ── Footer ──
     const pageCount = doc.internal.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
@@ -356,12 +399,14 @@ const EmployeeDetailsPage = () => {
                 <th>ORDERS</th>
                 <th>RETURNS</th>
                 <th>CALLING</th>
+                <th>SALES</th>
+                <th>REVENUE</th>
                 <th>ACTIONS</th>
               </tr>
             </thead>
             <tbody>
-              {loading && <tr><td colSpan={8} style={{ textAlign: "center", padding: 24, color: "#94a3b8" }}>Loading...</td></tr>}
-              {!loading && filtered.length === 0 && <tr><td colSpan={8} style={{ textAlign: "center", padding: 24, color: "#94a3b8" }}>No employees found</td></tr>}
+              {loading && <tr><td colSpan={10} style={{ textAlign: "center", padding: 24, color: "#94a3b8" }}>Loading...</td></tr>}
+              {!loading && filtered.length === 0 && <tr><td colSpan={10} style={{ textAlign: "center", padding: 24, color: "#94a3b8" }}>No employees found</td></tr>}
               {filtered.map((emp) => (
                 <tr key={emp._id} style={{ cursor: "pointer", background: selected?._id === emp._id ? "rgba(6,182,212,0.06)" : "transparent" }} onClick={() => handleSelect(emp)}>
                   <td style={{ fontWeight: 600 }}>{emp.name}</td>
@@ -371,6 +416,8 @@ const EmployeeDetailsPage = () => {
                   <td><span style={{ fontWeight: 700, color: "#3b82f6" }}>{emp.orderCount || 0}</span></td>
                   <td><span style={{ fontWeight: 700, color: "#f59e0b" }}>{emp.returnCount || 0}</span></td>
                   <td><span style={{ fontWeight: 700, color: "#10b981" }}>{emp.callingCount || 0}</span></td>
+                  <td><span style={{ fontWeight: 700, color: "#8b5cf6" }}>Rs.{(emp.totalSales || 0).toLocaleString("en-IN")}</span></td>
+                  <td><span style={{ fontWeight: 700, color: "#ec4899" }}>Rs.{(emp.totalRevenue || 0).toLocaleString("en-IN")}</span></td>
                   <td>
                     <button
                       className="primary-btn"
@@ -488,21 +535,29 @@ const EmployeeDetailsPage = () => {
                 <div className="table-scroll">
                   <table>
                     <thead>
-                      <tr><th>Date</th><th>Outgoing</th><th>Incoming</th><th>Connected</th><th>Interested</th><th>Conversions</th><th>Revenue</th></tr>
+                      <tr><th>Date</th><th>Outgoing</th><th>Incoming</th><th>Connected</th><th>Not Connected</th><th>Interested</th><th>Not Interested</th><th>F/U Calls</th><th>F/U Leads</th><th>Total Calls</th><th>Conversions</th><th>Revenue</th></tr>
                     </thead>
                     <tbody>
-                      {details.callingRecords.length === 0 && <tr><td colSpan={7} style={{ textAlign: "center", padding: 20, color: "#94a3b8" }}>No calling records</td></tr>}
-                      {details.callingRecords.map((c) => (
-                        <tr key={c._id}>
-                          <td>{formatDate(c.date)}</td>
-                          <td>{c.outgoingCalls || 0}</td>
-                          <td>{c.incomingCalls || 0}</td>
-                          <td>{c.connectedCalls || 0}</td>
-                          <td>{c.interestedLeads || 0}</td>
-                          <td>{c.conversionsDone || 0}</td>
-                          <td>Rs.{c.revenueGenerated || 0}</td>
-                        </tr>
-                      ))}
+                      {details.callingRecords.length === 0 && <tr><td colSpan={12} style={{ textAlign: "center", padding: 20, color: "#94a3b8" }}>No calling records</td></tr>}
+                      {details.callingRecords.map((c) => {
+                        const totalCalls = (c.outgoingCalls || 0) + (c.incomingCalls || 0) + (c.followUpCalls || 0);
+                        return (
+                          <tr key={c._id}>
+                            <td>{formatDate(c.date)}</td>
+                            <td>{c.outgoingCalls || 0}</td>
+                            <td>{c.incomingCalls || 0}</td>
+                            <td>{c.connectedCalls || 0}</td>
+                            <td>{c.notConnectedCalls || 0}</td>
+                            <td>{c.interestedLeads || 0}</td>
+                            <td>{c.notInterestedLeads || 0}</td>
+                            <td>{c.followUpCalls || 0}</td>
+                            <td>{c.followUpLeads || 0}</td>
+                            <td style={{ fontWeight: 600 }}>{totalCalls}</td>
+                            <td>{c.conversionsDone || 0}</td>
+                            <td style={{ fontWeight: 600 }}>Rs.{c.revenueGenerated || 0}</td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

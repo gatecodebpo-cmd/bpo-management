@@ -74,6 +74,7 @@ const orderEditFields = [
   },
   { key: "trackingId", label: "Tracking ID" },
   { key: "courierCompany", label: "Courier Company" },
+  { key: "bankName", label: "Bank Name", type: "select", options: ["SBI", "BOB", "BOM", "MGB", "UPGB", "MPGB"] },
 ];
 
 const parcelStatusOptions = ["Pending", "Process", "Parcel", "Packed", "Dispatched", "Delivered"];
@@ -127,6 +128,10 @@ const OrderManagePage = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editRow, setEditRow] = useState(null);
+
+  useEffect(() => {
+    if (editRow) window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [editRow]);
 
   useEffect(() => {
     let mounted = true;

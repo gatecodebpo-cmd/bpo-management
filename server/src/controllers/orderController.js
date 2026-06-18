@@ -56,7 +56,7 @@ export const updateOrder = async (req, res, next) => {
       "customerName", "mobileNumber", "fullAddress", "pincode",
       "productType", "customProductName", "numberOfUnits", "amount",
       "totalAmount", "advanceAmount", "dateOfOrder", "orderStatus",
-      "parcelStatus", "trackingId", "courierCompany"
+      "parcelStatus", "trackingId", "courierCompany", "bankName"
     ];
     const update = {};
     for (const field of allowedFields) {

@@ -69,6 +69,10 @@ const EmployeeCustomerPage = () => {
   const [saving, setSaving] = useState(false);
   const [followUpFilter, setFollowUpFilter] = useState("All");
 
+  useEffect(() => {
+    if (editingId) window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [editingId]);
+
   const fetchCustomers = useCallback(async () => {
     try {
       setLoading(true);

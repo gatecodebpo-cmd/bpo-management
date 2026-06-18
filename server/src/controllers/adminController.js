@@ -281,12 +281,22 @@ export const getEmployeeSummary = async (req, res, next) => {
 
     const summary = await Promise.all(
       employees.map(async (emp) => {
-        const [orderCount, returnCount, callingCount] = await Promise.all([
+        const [orderCount, returnCount, callingCount, salesAgg, revenueAgg] = await Promise.all([
           Order.countDocuments({ employeeId: emp._id, ...orderFilter }),
           ReturnRequest.countDocuments({ employeeId: emp._id, ...returnFilter }),
-          CallingRecord.countDocuments({ employeeId: emp._id, ...callFilter })
+          CallingRecord.countDocuments({ employeeId: emp._id, ...callFilter }),
+          Order.aggregate([
+            { $match: { employeeId: emp._id, ...orderFilter } },
+            { $group: { _id: null, total: { $sum: "$totalAmount" } } }
+          ]),
+          CallingRecord.aggregate([
+            { $match: { employeeId: emp._id, ...callFilter } },
+            { $group: { _id: null, total: { $sum: "$revenueGenerated" } } }
+          ])
         ]);
-        return { ...emp, orderCount, returnCount, callingCount };
+        const totalSales = salesAgg[0]?.total || 0;
+        const totalRevenue = revenueAgg[0]?.total || 0;
+        return { ...emp, orderCount, returnCount, callingCount, totalSales, totalRevenue };
       })
     );
 

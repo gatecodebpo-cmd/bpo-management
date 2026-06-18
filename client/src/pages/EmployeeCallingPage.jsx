@@ -36,11 +36,26 @@ const EmployeeCallingPage = () => {
   const [records, setRecords] = useState([]);
   const [form, setForm] = useState(initialState);
   const [editingId, setEditingId] = useState(null);
+  const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [filter, setFilter] = useState("today");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+
+  useEffect(() => {
+    if (editingId) window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [editingId]);
+
+  const validate = () => {
+    const next = {};
+    if (!form.conversionsDone && form.conversionsDone !== 0) next.conversionsDone = "Conversions Done is required";
+    if (Number(form.conversionsDone) < 0) next.conversionsDone = "Must be 0 or more";
+    if (!form.revenueGenerated && form.revenueGenerated !== 0) next.revenueGenerated = "Revenue Generated is required";
+    if (Number(form.revenueGenerated) < 0) next.revenueGenerated = "Must be 0 or more";
+    setErrors(next);
+    return Object.keys(next).length === 0;
+  };
 
   const fetchRecords = useCallback(async () => {
     try {
@@ -83,6 +98,7 @@ const EmployeeCallingPage = () => {
   };
 
   const handleSave = async () => {
+    if (!validate()) return;
     try {
       setSaving(true);
       const payload = {
@@ -90,16 +106,17 @@ const EmployeeCallingPage = () => {
         outgoingCalls: Number(form.outgoingCalls) || 0,
         incomingCalls: Number(form.incomingCalls) || 0,
         connectedCalls: Number(form.connectedCalls) || 0,
-        notConnectedCalls: Math.max((Number(form.outgoingCalls) || 0) - (Number(form.connectedCalls) || 0), 0),
+        notConnectedCalls: Math.max((Number(form.outgoingCalls) || 0) + (Number(form.incomingCalls) || 0) - (Number(form.connectedCalls) || 0), 0),
         interestedLeads: Number(form.interestedLeads) || 0,
         notInterestedLeads: Number(form.notInterestedLeads) || 0,
         followUpCalls: Number(form.followUpCalls) || 0,
         followUpLeads: Number(form.followUpLeads) || 0,
-        conversionsDone: Number(form.conversionsDone) || 0,
-        revenueGenerated: Number(form.revenueGenerated) || 0,
+        conversionsDone: Number(form.conversionsDone),
+        revenueGenerated: Number(form.revenueGenerated),
       };
       await api.post("/employee/calling-records", payload);
       setForm(initialState);
+      setErrors({});
       fetchRecords();
     } catch {
       // silent
@@ -110,6 +127,7 @@ const EmployeeCallingPage = () => {
 
   const handleUpdate = async () => {
     if (!editingId) return;
+    if (!validate()) return;
     try {
       setSaving(true);
       const payload = {
@@ -117,17 +135,18 @@ const EmployeeCallingPage = () => {
         outgoingCalls: Number(form.outgoingCalls) || 0,
         incomingCalls: Number(form.incomingCalls) || 0,
         connectedCalls: Number(form.connectedCalls) || 0,
-        notConnectedCalls: Math.max((Number(form.outgoingCalls) || 0) - (Number(form.connectedCalls) || 0), 0),
+        notConnectedCalls: Math.max((Number(form.outgoingCalls) || 0) + (Number(form.incomingCalls) || 0) - (Number(form.connectedCalls) || 0), 0),
         interestedLeads: Number(form.interestedLeads) || 0,
         notInterestedLeads: Number(form.notInterestedLeads) || 0,
         followUpCalls: Number(form.followUpCalls) || 0,
         followUpLeads: Number(form.followUpLeads) || 0,
-        conversionsDone: Number(form.conversionsDone) || 0,
-        revenueGenerated: Number(form.revenueGenerated) || 0,
+        conversionsDone: Number(form.conversionsDone),
+        revenueGenerated: Number(form.revenueGenerated),
       };
       await api.put(`/employee/calling-records/${editingId}`, payload);
       setForm(initialState);
       setEditingId(null);
+      setErrors({});
       fetchRecords();
     } catch {
       // silent
@@ -139,6 +158,7 @@ const EmployeeCallingPage = () => {
   const handleReset = () => {
     setForm(initialState);
     setEditingId(null);
+    setErrors({});
   };
 
   const handleEdit = (record) => {
@@ -193,7 +213,7 @@ const EmployeeCallingPage = () => {
           </label>
           <label className="field-wrap">
             <span>Not Connected Calls</span>
-            <input type="number" value={Math.max((Number(form.outgoingCalls) || 0) - (Number(form.connectedCalls) || 0), 0)} readOnly disabled style={{ fontWeight: 700, color: "var(--primary)" }} />
+            <input type="number" value={Math.max((Number(form.outgoingCalls) || 0) + (Number(form.incomingCalls) || 0) - (Number(form.connectedCalls) || 0), 0)} readOnly disabled style={{ fontWeight: 700, color: "var(--primary)" }} />
           </label>
           <label className="field-wrap">
             <span>Interested Leads</span>
@@ -216,12 +236,20 @@ const EmployeeCallingPage = () => {
             <input type="number" value={totalCalls} readOnly disabled style={{ fontWeight: 700, color: "var(--primary)" }} />
           </label>
           <label className="field-wrap">
-            <span>Conversions Done</span>
-            <input type="number" name="conversionsDone" value={form.conversionsDone} onChange={handleChange} min="0" />
+            <span>Conversions Done <span style={{ color: "var(--danger)" }}>*</span></span>
+            <input
+              type="number" name="conversionsDone" value={form.conversionsDone} onChange={handleChange} min="0"
+              style={errors.conversionsDone ? { borderColor: "var(--danger)" } : {}}
+            />
+            {errors.conversionsDone && <small style={{ color: "var(--danger)", fontSize: 11 }}>{errors.conversionsDone}</small>}
           </label>
           <label className="field-wrap">
-            <span>Revenue Generated (₹)</span>
-            <input type="number" name="revenueGenerated" value={form.revenueGenerated} onChange={handleChange} min="0" />
+            <span>Revenue Generated (₹) <span style={{ color: "var(--danger)" }}>*</span></span>
+            <input
+              type="number" name="revenueGenerated" value={form.revenueGenerated} onChange={handleChange} min="0"
+              style={errors.revenueGenerated ? { borderColor: "var(--danger)" } : {}}
+            />
+            {errors.revenueGenerated && <small style={{ color: "var(--danger)", fontSize: 11 }}>{errors.revenueGenerated}</small>}
           </label>
         </div>
         <div style={{ display: "flex", gap: 12, marginTop: 20 }}>

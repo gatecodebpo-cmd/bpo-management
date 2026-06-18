@@ -191,7 +191,7 @@ npm run dev
 ## Authentication
 
 - **Admin registration is disabled**. A fixed admin is auto-created on server start using env variables (`ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_NAME`).
-- Default admin: `uttam306115@gmail.com` / `uttam@2004`
+- Default admin: `sales@rmaxiot.in` / `rmax@2026`
 - Login at `/admin/login` (admin) or `/login` (employee)
 - Employees can be registered through the admin panel.
 

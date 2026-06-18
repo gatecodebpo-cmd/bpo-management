@@ -3,6 +3,7 @@ import { body } from "express-validator";
 const productTypes = ["GPS", "Vending Machine", "Disposal", "Other"];
 const orderStatuses = ["Pending", "Approved", "Processing", "Delivered", "Cancelled"];
 const parcelStatuses = ["Pending", "Process", "Parcel", "Packed", "Dispatched", "Delivered"];
+const bankNames = ["SBI", "BOB", "BOM", "MGB", "UPGB", "MPGB"];
 
 export const createOrderValidator = [
   body("customerName").trim().notEmpty().withMessage("Customer name is required"),
@@ -33,7 +34,8 @@ export const createOrderValidator = [
       }
       return true;
     }),
-  body("dateOfOrder").optional()
+  body("dateOfOrder").optional(),
+  body("bankName").optional().isIn(bankNames).withMessage("Invalid bank name")
 ];
 
 export const updateOrderStatusValidator = [

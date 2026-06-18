@@ -4,7 +4,7 @@ import { fileURLToPath } from "url";
 import path from "path";
 import app from "./app.js";
 import { connectDB } from "./config/db.js";
-import { ensureFixedAdminUser, ensureFixedEmployeeUser } from "./config/seedAdmin.js";
+import { ensureFixedAdminUser } from "./config/seedAdmin.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -17,7 +17,6 @@ const start = async () => {
   try {
     await connectDB(DB_TIMEOUT);
     await ensureFixedAdminUser();
-    await ensureFixedEmployeeUser();
   } catch (error) {
     console.error("MongoDB unavailable. Starting API without database:", error.message);
   }
