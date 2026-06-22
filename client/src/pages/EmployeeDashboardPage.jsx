@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../api/client";
-import EditModal from "../components/EditModal";
 
 const PackageIcon = () => (
   <svg viewBox="0 0 24 24"><path d="M16.5 9.4l-9-5.19M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 002 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.29 7 12 12 20.71 7"/><line x1="12" y1="22" x2="12" y2="12"/></svg>
@@ -9,6 +8,10 @@ const PackageIcon = () => (
 
 const RefreshIcon = () => (
   <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+);
+
+const RupeeIcon = () => (
+  <svg viewBox="0 0 24 24"><path d="M6 3h12M6 8h12M9 3l3 18M15 3l-3 18"/><path d="M12 21c-2.5 0-5-1.5-5-4s2.5-4 5-4 5 1.5 5 4-2.5 4-5 4z" fill="none"/></svg>
 );
 
 const formatCurrency = (value) =>
@@ -54,12 +57,11 @@ const FILTERS = [
 
 const EmployeeDashboardPage = () => {
   const { user } = useAuth();
-  const [stats, setStats] = useState({ orderCount: 0, returnCount: 0, recentOrders: [], recentReturns: [] });
+  const [stats, setStats] = useState({ orderCount: 0, returnCount: 0, totalIncentive: 0 });
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("today");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [allOrders, setAllOrders] = useState([]);
 
   const load = useCallback(async (f, sd, ed) => {
     try {
@@ -69,15 +71,10 @@ const EmployeeDashboardPage = () => {
         if (sd) params.startDate = sd;
         if (ed) params.endDate = ed;
       }
-      const [dashRes, ordersRes] = await Promise.all([
-        api.get("/employee/dashboard", { params }),
-        api.get("/employee/orders"),
-      ]);
+      const dashRes = await api.get("/employee/dashboard", { params });
       setStats(dashRes.data.data);
-      setAllOrders(ordersRes.data.data || []);
     } catch {
-      setStats({ orderCount: 0, returnCount: 0, recentOrders: [], recentReturns: [] });
-      setAllOrders([]);
+      setStats({ orderCount: 0, returnCount: 0, totalIncentive: 0 });
     } finally {
       setLoading(false);
     }
@@ -95,81 +92,10 @@ const EmployeeDashboardPage = () => {
 
   const todayStr = new Date().toISOString().slice(0, 10);
 
-  const [editOrder, setEditOrder] = useState(null);
-  const [editReturn, setEditReturn] = useState(null);
-
-  useEffect(() => {
-    if (editOrder || editReturn) {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-  }, [editOrder, editReturn]);
-
-  const orderEditFields = [
-    { key: "customerName", label: "Customer Name" },
-    { key: "mobileNumber", label: "Mobile Number" },
-    { key: "fullAddress", label: "Full Address" },
-    { key: "pincode", label: "Pincode" },
-    { key: "productType", label: "Product Type", type: "select", options: ["GPS", "Vending Machine", "Disposal", "Other"] },
-    { key: "customProductName", label: "Custom Product Name" },
-    { key: "numberOfUnits", label: "Number of Units", type: "number" },
-    { key: "amount", label: "Amount (per unit)", type: "number" },
-    { key: "advanceAmount", label: "Advance Amount", type: "number" },
-    { key: "orderStatus", label: "Status", type: "select", options: ["Pending", "Approved", "Processing", "Delivered", "Cancelled"] },
-    { key: "parcelStatus", label: "Parcel Status", type: "select", options: ["Pending", "Process", "Parcel", "Packed", "Dispatched", "Delivered"] },
-    { key: "trackingId", label: "Tracking ID" },
-    { key: "courierCompany", label: "Courier Company" },
-    { key: "bankName", label: "Bank Name", type: "select", options: ["SBI", "BOB", "BOM", "MGB", "UPGB", "MPGB"] },
-  ];
-
-  const returnEditFields = [
-    { key: "customerName", label: "Customer Name" },
-    { key: "mobileNumber", label: "Mobile Number" },
-    { key: "pincode", label: "Pincode" },
-    { key: "productType", label: "Product Type", type: "select", options: ["GPS", "Vending Machine", "Disposal", "Other"] },
-    { key: "numberOfUnitsReturning", label: "Units Returning", type: "number" },
-    { key: "returnReason", label: "Return Reason", type: "select", options: ["Product Damaged", "Wrong Product", "Product Not Working", "Extra Order", "Other"] },
-    { key: "customReason", label: "Custom Reason" },
-    { key: "additionalDescription", label: "Additional Description", type: "textarea" },
-    { key: "returnStatus", label: "Status", type: "select", options: ["Return Requested", "Return Approved", "Pickup Scheduled", "Returned Successfully", "Return Rejected"] },
-  ];
-
-  const handleEditOrder = (order) => setEditOrder({ ...order });
-  const handleEditReturn = (r) => setEditReturn({ ...r });
-
-  const handleDeleteOrder = async (order) => {
-    if (!window.confirm(`Delete order for "${order.customerName}"? This cannot be undone.`)) return;
-    await api.delete(`/employee/orders/${order._id}`);
-    load(filter, startDate, endDate);
-  };
-
-  const handleDeleteReturn = async (r) => {
-    if (!window.confirm(`Delete return request for "${r.customerName}"? This cannot be undone.`)) return;
-    await api.delete(`/employee/returns/${r._id}`);
-    load(filter, startDate, endDate);
-  };
-
-  const handleSaveOrderEdit = async (form) => {
-    await api.put(`/employee/orders/${form._id}`, form);
-    setEditOrder(null);
-    load(filter, startDate, endDate);
-  };
-
-  const handleSaveReturnEdit = async (form) => {
-    await api.put(`/employee/returns/${form._id}`, form);
-    setEditReturn(null);
-    load(filter, startDate, endDate);
-  };
-
-  const actionBtn = (onEdit, onDelete) => (
-    <div style={{ display: "flex", gap: 4, justifyContent: "center" }}>
-      <button onClick={onEdit} title="Edit" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--primary)", fontSize: 14, padding: "2px 4px" }}>&#9998;</button>
-      <button onClick={onDelete} title="Delete" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--danger)", fontSize: 14, padding: "2px 4px" }}>&#128465;</button>
-    </div>
-  );
-
   const statCards = [
     { title: "Orders", value: stats.orderCount, icon: PackageIcon, color: "blue" },
     { title: "Returns", value: stats.returnCount, icon: RefreshIcon, color: "orange" },
+    { title: "Total Incentive", value: formatCurrency(stats.totalIncentive), icon: RupeeIcon, color: "green" },
   ];
 
   return (
@@ -221,97 +147,17 @@ const EmployeeDashboardPage = () => {
       {loading ? (
         <p style={{ color: "var(--text-muted)" }}>Loading...</p>
       ) : (
-        <>
-          <div className="stats-grid" style={{ gridTemplateColumns: "repeat(2, 1fr)", maxWidth: 600 }}>
-            {statCards.map(({ title, value, icon: Icon, color }) => (
-              <article key={title} className={`stat-card glass-card ${color}`}>
-                <div className={`stat-icon ${color}`}><Icon /></div>
-                <div className="stat-info">
-                  <p>{title}</p>
-                  <h3>{typeof value === "number" ? value.toLocaleString() : value}</h3>
-                </div>
-              </article>
-            ))}
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 20, marginTop: 24 }}>
-            <div className="glass-card" style={{ padding: 20 }}>
-              <div className="section-header" style={{ marginBottom: 12 }}>
-                <h3 style={{ fontSize: 15, fontWeight: 600 }}>Recent Orders</h3>
+        <div className="stats-grid" style={{ gridTemplateColumns: "repeat(3, 1fr)", maxWidth: 900 }}>
+          {statCards.map(({ title, value, icon: Icon, color }) => (
+            <article key={title} className={`stat-card glass-card ${color}`}>
+              <div className={`stat-icon ${color}`}><Icon /></div>
+              <div className="stat-info">
+                <p>{title}</p>
+                <h3>{typeof value === "number" ? value.toLocaleString() : value}</h3>
               </div>
-              {stats.recentOrders?.length === 0 ? (
-                <p style={{ color: "var(--text-muted)", fontSize: 13, margin: 0 }}>No orders found</p>
-              ) : (
-                <div style={{ overflowX: "auto" }}>
-                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-                    <thead>
-                      <tr style={{ borderBottom: "1px solid var(--border)" }}>
-                        <th style={{ textAlign: "left", padding: "6px 8px", fontSize: 11, color: "var(--text-muted)" }}>Customer</th>
-                        <th style={{ textAlign: "left", padding: "6px 8px", fontSize: 11, color: "var(--text-muted)" }}>Product</th>
-                        <th style={{ textAlign: "right", padding: "6px 8px", fontSize: 11, color: "var(--text-muted)" }}>Total</th>
-                        <th style={{ textAlign: "center", padding: "6px 8px", fontSize: 11, color: "var(--text-muted)" }}>Status</th>
-                        <th style={{ textAlign: "right", padding: "6px 8px", fontSize: 11, color: "var(--text-muted)" }}>Date</th>
-                        <th style={{ textAlign: "center", padding: "6px 8px", fontSize: 11, color: "var(--text-muted)" }}>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {stats.recentOrders.map((o) => (
-                        <tr key={o._id} style={{ borderBottom: "1px solid var(--border)" }}>
-                          <td style={{ padding: "8px", fontWeight: 500 }}>{o.customerName}</td>
-                          <td style={{ padding: "8px" }}>{o.productType === "Other" ? o.customProductName : o.productType}</td>
-                          <td style={{ padding: "8px", textAlign: "right" }}>{formatCurrency(o.totalAmount)}</td>
-                          <td style={{ padding: "8px", textAlign: "center" }}>{statusBadge(o.orderStatus, orderStatusColors)}</td>
-                          <td style={{ padding: "8px", textAlign: "right", fontSize: 12, color: "var(--text-muted)", whiteSpace: "nowrap" }}>{formatDateTime(o.createdAt)}</td>
-                          <td style={{ padding: "8px", textAlign: "center" }}>{actionBtn(() => handleEditOrder(o), () => handleDeleteOrder(o))}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-
-            <div className="glass-card" style={{ padding: 20 }}>
-              <div className="section-header" style={{ marginBottom: 12 }}>
-                <h3 style={{ fontSize: 15, fontWeight: 600 }}>Recent Returns</h3>
-              </div>
-              {stats.recentReturns?.length === 0 ? (
-                <p style={{ color: "var(--text-muted)", fontSize: 13, margin: 0 }}>No returns found</p>
-              ) : (
-                <div style={{ overflowX: "auto" }}>
-                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-                    <thead>
-                      <tr style={{ borderBottom: "1px solid var(--border)" }}>
-                        <th style={{ textAlign: "left", padding: "6px 8px", fontSize: 11, color: "var(--text-muted)" }}>Customer</th>
-                        <th style={{ textAlign: "left", padding: "6px 8px", fontSize: 11, color: "var(--text-muted)" }}>Product</th>
-                        <th style={{ textAlign: "center", padding: "6px 8px", fontSize: 11, color: "var(--text-muted)" }}>Status</th>
-                        <th style={{ textAlign: "right", padding: "6px 8px", fontSize: 11, color: "var(--text-muted)" }}>Date</th>
-                        <th style={{ textAlign: "center", padding: "6px 8px", fontSize: 11, color: "var(--text-muted)" }}>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {stats.recentReturns.map((r) => (
-                        <tr key={r._id} style={{ borderBottom: "1px solid var(--border)" }}>
-                          <td style={{ padding: "8px", fontWeight: 500 }}>{r.customerName}</td>
-                          <td style={{ padding: "8px" }}>{r.productType === "Other" ? r.customProductName || r.productType : r.productType}</td>
-                          <td style={{ padding: "8px", textAlign: "center" }}>{statusBadge(r.returnStatus, returnStatusColors)}</td>
-                          <td style={{ padding: "8px", textAlign: "right", fontSize: 12, color: "var(--text-muted)", whiteSpace: "nowrap" }}>{formatDateTime(r.createdAt)}</td>
-                          <td style={{ padding: "8px", textAlign: "center" }}>{actionBtn(() => handleEditReturn(r), () => handleDeleteReturn(r))}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          </div>
-        </>
-      )}
-      {editOrder && (
-        <EditModal title="Order" fields={orderEditFields} data={editOrder} onSave={handleSaveOrderEdit} onClose={() => setEditOrder(null)} />
-      )}
-      {editReturn && (
-        <EditModal title="Return" fields={returnEditFields} data={editReturn} onSave={handleSaveReturnEdit} onClose={() => setEditReturn(null)} />
+            </article>
+          ))}
+        </div>
       )}
     </section>
   );

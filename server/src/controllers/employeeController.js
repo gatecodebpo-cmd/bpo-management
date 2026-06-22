@@ -30,6 +30,14 @@ const getDateRange = (filter, startDate, endDate) => {
       end.setHours(23, 59, 59, 999);
       break;
     }
+    case "week": {
+      start = new Date(now);
+      start.setDate(start.getDate() - start.getDay());
+      start.setHours(0, 0, 0, 0);
+      end = new Date(now);
+      end.setHours(23, 59, 59, 999);
+      break;
+    }
     case "month": {
       start = new Date(now.getFullYear(), now.getMonth(), 1);
       start.setHours(0, 0, 0, 0);
@@ -68,12 +76,25 @@ export const getEmployeeDashboard = async (req, res, next) => {
 
     const dateFilter = { employeeId, createdAt: { $gte: start, $lte: end } };
 
-    const [orderCount, returnCount, recentOrders, recentReturns] = await Promise.all([
+    const [orderCount, returnCount, recentOrders, recentReturns, allOrders] = await Promise.all([
       Order.countDocuments(dateFilter),
       ReturnRequest.countDocuments(dateFilter),
       Order.find(dateFilter).sort({ createdAt: -1 }).limit(5).lean(),
-      ReturnRequest.find(dateFilter).sort({ createdAt: -1 }).limit(5).lean()
+      ReturnRequest.find(dateFilter).sort({ createdAt: -1 }).limit(5).lean(),
+      Order.find(dateFilter).lean()
     ]);
+
+    const totalIncentive = allOrders.reduce((sum, o) => {
+      const units = Number(o.numberOfUnits || 0);
+      const amount = Number(o.amount || 0);
+      let inc = 0;
+      if (amount <= 3200) {
+        inc = amount * 0.0225 * units;
+      } else {
+        inc = (amount - 3200) * units;
+      }
+      return sum + inc;
+    }, 0);
 
     return res.status(200).json({
       data: {
@@ -81,6 +102,7 @@ export const getEmployeeDashboard = async (req, res, next) => {
         filter,
         orderCount,
         returnCount,
+        totalIncentive: Math.round(totalIncentive),
         recentOrders,
         recentReturns
       }
@@ -213,22 +235,11 @@ export const getEmployeeCallingRecords = async (req, res, next) => {
       return res.status(401).json({ message: "Employee context not found" });
     }
 
-    const { startDate, endDate } = req.query;
+    const { filter: dateFilter = "today", startDate, endDate } = req.query;
     const filter = { employeeId };
 
-    if (startDate || endDate) {
-      filter.date = {};
-      if (startDate) {
-        const s = new Date(startDate);
-        s.setHours(0, 0, 0, 0);
-        filter.date.$gte = s;
-      }
-      if (endDate) {
-        const e = new Date(endDate);
-        e.setHours(23, 59, 59, 999);
-        filter.date.$lte = e;
-      }
-    }
+    const range = getDateRange(dateFilter, startDate, endDate);
+    filter.date = { $gte: range.start, $lte: range.end };
 
     const records = await CallingRecord.find(filter).sort({ date: -1, createdAt: -1 });
     return res.status(200).json({ data: records });

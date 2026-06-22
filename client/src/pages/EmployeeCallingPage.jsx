@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "../api/client";
 import { useAuth } from "../context/AuthContext";
+import Toast from "../components/Toast";
 
 const FILTERS = ["today", "yesterday", "week", "month", "custom"];
 
@@ -18,7 +19,7 @@ const formatLabel = (f) => {
 const formatDate = (d) =>
   d ? new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "-";
 
-const initialState = {
+const getInitialState = () => ({
   date: new Date().toISOString().split("T")[0],
   outgoingCalls: "",
   incomingCalls: "",
@@ -29,16 +30,17 @@ const initialState = {
   followUpLeads: "",
   conversionsDone: "",
   revenueGenerated: "",
-};
+});
 
 const EmployeeCallingPage = () => {
   const { user } = useAuth();
   const [records, setRecords] = useState([]);
-  const [form, setForm] = useState(initialState);
+  const [form, setForm] = useState(getInitialState());
   const [editingId, setEditingId] = useState(null);
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState(null);
   const [filter, setFilter] = useState("today");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -46,6 +48,8 @@ const EmployeeCallingPage = () => {
   useEffect(() => {
     if (editingId) window.scrollTo({ top: 0, behavior: "smooth" });
   }, [editingId]);
+
+  const clearToast = useCallback(() => setToast(null), []);
 
   const validate = () => {
     const next = {};
@@ -60,24 +64,8 @@ const EmployeeCallingPage = () => {
   const fetchRecords = useCallback(async () => {
     try {
       setLoading(true);
-      const params = {};
-      const now = new Date();
-      if (filter === "today") {
-        params.startDate = now.toISOString().split("T")[0];
-        params.endDate = now.toISOString().split("T")[0];
-      } else if (filter === "yesterday") {
-        const y = new Date(now); y.setDate(y.getDate() - 1);
-        params.startDate = y.toISOString().split("T")[0];
-        params.endDate = y.toISOString().split("T")[0];
-      } else if (filter === "week") {
-        const start = new Date(now); start.setDate(start.getDate() - start.getDay());
-        params.startDate = start.toISOString().split("T")[0];
-        params.endDate = now.toISOString().split("T")[0];
-      } else if (filter === "month") {
-        const start = new Date(now.getFullYear(), now.getMonth(), 1);
-        params.startDate = start.toISOString().split("T")[0];
-        params.endDate = now.toISOString().split("T")[0];
-      } else if (filter === "custom") {
+      const params = { filter };
+      if (filter === "custom") {
         if (startDate) params.startDate = startDate;
         if (endDate) params.endDate = endDate;
       }
@@ -115,11 +103,12 @@ const EmployeeCallingPage = () => {
         revenueGenerated: Number(form.revenueGenerated),
       };
       await api.post("/employee/calling-records", payload);
-      setForm(initialState);
+      setToast("Calling report submitted successfully!");
+      setForm(getInitialState());
       setErrors({});
       fetchRecords();
-    } catch {
-      // silent
+    } catch (error) {
+      setToast(error.response?.data?.message || "Failed to save calling report");
     } finally {
       setSaving(false);
     }
@@ -144,19 +133,20 @@ const EmployeeCallingPage = () => {
         revenueGenerated: Number(form.revenueGenerated),
       };
       await api.put(`/employee/calling-records/${editingId}`, payload);
-      setForm(initialState);
+      setToast("Calling report updated successfully!");
+      setForm(getInitialState());
       setEditingId(null);
       setErrors({});
       fetchRecords();
-    } catch {
-      // silent
+    } catch (error) {
+      setToast(error.response?.data?.message || "Failed to update calling report");
     } finally {
       setSaving(false);
     }
   };
 
   const handleReset = () => {
-    setForm(initialState);
+    setForm(getInitialState());
     setEditingId(null);
     setErrors({});
   };
@@ -362,8 +352,13 @@ const EmployeeCallingPage = () => {
                       <button
                         onClick={async () => {
                           if (!window.confirm(`Delete calling record from ${formatDate(r.date)}?`)) return;
-                          await api.delete(`/employee/calling-records/${r._id}`);
-                          fetchRecords();
+                          try {
+                            await api.delete(`/employee/calling-records/${r._id}`);
+                            setToast("Calling report deleted successfully!");
+                            fetchRecords();
+                          } catch (error) {
+                            setToast(error.response?.data?.message || "Failed to delete calling report");
+                          }
                         }}
                         style={{ padding: "4px 10px", fontSize: 11, background: "none", border: "1px solid #ef4444", color: "#ef4444", borderRadius: 6, cursor: "pointer", fontWeight: 500 }}
                       >
@@ -377,6 +372,8 @@ const EmployeeCallingPage = () => {
           </table>
         </div>
       </div>
+
+      {toast && <Toast message={toast} type={toast.includes("successfully") ? "success" : "error"} onClose={clearToast} />}
     </section>
   );
 };

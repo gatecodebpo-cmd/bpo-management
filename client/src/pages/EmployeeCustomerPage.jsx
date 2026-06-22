@@ -2,6 +2,35 @@ import { useCallback, useEffect, useState } from "react";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { api } from "../api/client";
+import Toast from "../components/Toast";
+
+const FILTERS = [
+  { key: "today", label: "Today" },
+  { key: "yesterday", label: "Yesterday" },
+  { key: "month", label: "This Month" },
+  { key: "custom", label: "Date Range" },
+];
+
+const getDateParams = (filter, startDate, endDate) => {
+  const now = new Date();
+  const params = {};
+  if (filter === "today") {
+    params.startDate = now.toISOString().split("T")[0];
+    params.endDate = now.toISOString().split("T")[0];
+  } else if (filter === "yesterday") {
+    const y = new Date(now); y.setDate(y.getDate() - 1);
+    params.startDate = y.toISOString().split("T")[0];
+    params.endDate = y.toISOString().split("T")[0];
+  } else if (filter === "month") {
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    params.startDate = start.toISOString().split("T")[0];
+    params.endDate = now.toISOString().split("T")[0];
+  } else if (filter === "custom") {
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+  }
+  return params;
+};
 
 const initialState = {
   customerName: "",
@@ -67,7 +96,11 @@ const EmployeeCustomerPage = () => {
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState(null);
   const [followUpFilter, setFollowUpFilter] = useState("All");
+  const [dateFilter, setDateFilter] = useState("today");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   useEffect(() => {
     if (editingId) window.scrollTo({ top: 0, behavior: "smooth" });
@@ -76,16 +109,19 @@ const EmployeeCustomerPage = () => {
   const fetchCustomers = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await api.get("/customers");
+      const params = getDateParams(dateFilter, startDate, endDate);
+      const res = await api.get("/customers", { params });
       setCustomers(res.data.data || []);
     } catch {
       setCustomers([]);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [dateFilter, startDate, endDate]);
 
   useEffect(() => { fetchCustomers(); }, [fetchCustomers]);
+
+  const clearToast = useCallback(() => setToast(null), []);
 
   const onlyLetters = (val) => val.replace(/[^a-zA-Z\s]/g, "");
   const onlyDigits = (val) => val.replace(/\D/g, "").slice(0, 10);
@@ -106,10 +142,11 @@ const EmployeeCustomerPage = () => {
     try {
       setSaving(true);
       await api.post("/customers", form);
+      setToast("Customer information submitted successfully!");
       setForm(initialState);
       fetchCustomers();
-    } catch {
-      // silent
+    } catch (error) {
+      setToast(error.response?.data?.message || "Failed to save customer");
     } finally {
       setSaving(false);
     }
@@ -120,11 +157,12 @@ const EmployeeCustomerPage = () => {
     try {
       setSaving(true);
       await api.put(`/customers/${editingId}`, form);
+      setToast("Customer information updated successfully!");
       setForm(initialState);
       setEditingId(null);
       fetchCustomers();
-    } catch {
-      // silent
+    } catch (error) {
+      setToast(error.response?.data?.message || "Failed to update customer");
     } finally {
       setSaving(false);
     }
@@ -224,6 +262,35 @@ const EmployeeCustomerPage = () => {
         </div>
       </div>
 
+      <div className="glass-card" style={{ padding: "10px 20px", marginBottom: 16, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+        <span style={{ fontSize: 13, color: "var(--text-muted)", fontWeight: 500 }}>Filter by Date:</span>
+        {FILTERS.map(({ key, label }) => (
+          <button
+            key={key}
+            onClick={() => { setDateFilter(key); if (key !== "custom") { setStartDate(""); setEndDate(""); } }}
+            style={{
+              padding: "6px 16px", borderRadius: 8, border: `1px solid ${dateFilter === key ? "var(--primary)" : "var(--border)"}`,
+              background: dateFilter === key ? "rgba(6,182,212,0.15)" : "rgba(255,255,255,0.04)",
+              color: dateFilter === key ? "var(--primary)" : "var(--text)", cursor: "pointer", fontSize: 13, fontWeight: dateFilter === key ? 600 : 400,
+            }}
+          >
+            {label}
+          </button>
+        ))}
+        {dateFilter === "custom" && (
+          <>
+            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} max={new Date().toISOString().split("T")[0]}
+              style={{ background: "rgba(255,255,255,0.06)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text)", padding: "6px 10px", fontSize: 13 }} />
+            <span style={{ color: "var(--text-muted)", fontSize: 13 }}>to</span>
+            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} max={new Date().toISOString().split("T")[0]}
+              style={{ background: "rgba(255,255,255,0.06)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text)", padding: "6px 10px", fontSize: 13 }} />
+          </>
+        )}
+        <button onClick={fetchCustomers} className="primary-btn" style={{ padding: "6px 16px", fontSize: 13 }}>
+          Refresh
+        </button>
+      </div>
+
       <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 12 }}>
         <span style={{ fontSize: 14, color: "var(--text-muted)" }}>Filter by Follow Up:</span>
         <select
@@ -303,8 +370,13 @@ const EmployeeCustomerPage = () => {
                       </button>
                       <button onClick={async () => {
                         if (!window.confirm(`Delete customer ${c.customerName}?`)) return;
-                        await api.delete(`/customers/${c._id}`);
-                        fetchCustomers();
+                        try {
+                          await api.delete(`/customers/${c._id}`);
+                          setToast("Customer deleted successfully!");
+                          fetchCustomers();
+                        } catch (error) {
+                          setToast(error.response?.data?.message || "Failed to delete customer");
+                        }
                       }} style={{ padding: "4px 10px", fontSize: 11, background: "none", border: "1px solid #ef4444", color: "#ef4444", borderRadius: 6, cursor: "pointer", fontWeight: 500 }}>
                         Delete
                       </button>
@@ -318,6 +390,8 @@ const EmployeeCustomerPage = () => {
       </div>
         );
       })()}
+
+      {toast && <Toast message={toast} type={toast.includes("successfully") ? "success" : "error"} onClose={clearToast} />}
     </section>
   );
 };

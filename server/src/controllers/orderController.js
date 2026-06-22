@@ -53,7 +53,7 @@ export const updateOrder = async (req, res, next) => {
       return res.status(503).json({ message: "Database unavailable. Cannot update order." });
     }
     const allowedFields = [
-      "customerName", "mobileNumber", "fullAddress", "pincode",
+      "customerName", "mobileNumber", "alternateMobileNumber", "fullAddress", "pincode",
       "productType", "customProductName", "numberOfUnits", "amount",
       "totalAmount", "advanceAmount", "dateOfOrder", "orderStatus",
       "parcelStatus", "trackingId", "courierCompany", "bankName"

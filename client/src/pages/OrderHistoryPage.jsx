@@ -51,6 +51,7 @@ const columns = [
   { key: "employeeName", label: "Employee", render: (row) => row.employeeName || "-" },
   { key: "customerName", label: "Customer" },
   { key: "mobileNumber", label: "Mobile" },
+  { key: "alternateMobileNumber", label: "Alt Mobile", render: (row) => row.alternateMobileNumber || "-" },
   { key: "productType", label: "Product" },
   { key: "numberOfUnits", label: "Units" },
   { key: "totalAmount", label: "Total", render: (row) => formatCurrency(row.totalAmount) },
@@ -119,7 +120,7 @@ const OrderHistoryPage = () => {
           title="Orders"
           columns={columns}
           data={orders}
-          searchKeys={["employeeName", "customerName", "mobileNumber", "productType", "orderStatus", "parcelStatus", "trackingId", "courierCompany"]}
+          searchKeys={["employeeName", "customerName", "mobileNumber", "alternateMobileNumber", "productType", "orderStatus", "parcelStatus", "trackingId", "courierCompany"]}
           onDelete={handleDelete}
         />
       )}

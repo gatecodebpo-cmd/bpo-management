@@ -4,6 +4,7 @@ import autoTable from "jspdf-autotable";
 import { api } from "../api/client";
 import DataTable from "../components/DataTable";
 import EditModal from "../components/EditModal";
+import Toast from "../components/Toast";
 
 const formatDateTime = (dateString) => {
   if (!dateString) return "-";
@@ -116,6 +117,7 @@ const ReturnManagePage = () => {
   const [returns, setReturns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editRow, setEditRow] = useState(null);
+  const [toast, setToast] = useState(null);
 
   useEffect(() => {
     if (editRow) window.scrollTo({ top: 0, behavior: "smooth" });
@@ -148,10 +150,17 @@ const ReturnManagePage = () => {
     setEditRow(row);
   };
 
+  const clearToast = useCallback(() => setToast(null), []);
+
   const handleSaveEdit = async (form) => {
-    await api.put(`/returns/${form._id}`, form);
-    setEditRow(null);
-    handleRefresh();
+    try {
+      await api.put(`/returns/${form._id}`, form);
+      setToast("Return updated successfully!");
+      handleRefresh();
+      setTimeout(() => setEditRow(null), 500);
+    } catch (error) {
+      setToast(error.response?.data?.message || "Failed to update return");
+    }
   };
 
   const handleDownloadPDF = () => {
@@ -193,12 +202,14 @@ const ReturnManagePage = () => {
       {editRow && (
         <EditModal
           title="Return"
-          fields={returnEditFields}
+          fields={editRow.returnReason === "Other" ? returnEditFields : returnEditFields.filter((f) => f.key !== "customReason")}
           data={editRow}
           onSave={handleSaveEdit}
           onClose={() => setEditRow(null)}
         />
       )}
+
+      {toast && <Toast message={toast} type={toast.includes("successfully") ? "success" : "error"} onClose={clearToast} />}
     </section>
   );
 };

@@ -14,6 +14,20 @@ export const getCustomers = async (req, res, next) => {
       filter.employeeId = req.query.employeeId;
     }
 
+    if (req.query.startDate || req.query.endDate) {
+      filter.createdAt = {};
+      if (req.query.startDate) {
+        const s = new Date(req.query.startDate);
+        s.setHours(0, 0, 0, 0);
+        filter.createdAt.$gte = s;
+      }
+      if (req.query.endDate) {
+        const e = new Date(req.query.endDate);
+        e.setHours(23, 59, 59, 999);
+        filter.createdAt.$lte = e;
+      }
+    }
+
     const customers = await Customer.find(filter)
       .sort({ createdAt: -1 });
 

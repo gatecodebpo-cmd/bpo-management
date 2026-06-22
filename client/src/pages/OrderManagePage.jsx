@@ -4,6 +4,7 @@ import autoTable from "jspdf-autotable";
 import { api, toAbsoluteAssetUrl } from "../api/client";
 import DataTable from "../components/DataTable";
 import EditModal from "../components/EditModal";
+import Toast from "../components/Toast";
 
 const formatCurrency = (value) =>
   new Intl.NumberFormat("en-IN", {
@@ -53,6 +54,7 @@ const parcelBadge = (status) => {
 const orderEditFields = [
   { key: "customerName", label: "Customer Name" },
   { key: "mobileNumber", label: "Mobile Number" },
+  { key: "alternateMobileNumber", label: "Alt Mobile" },
   { key: "fullAddress", label: "Full Address" },
   { key: "pincode", label: "Pincode" },
   {
@@ -103,6 +105,7 @@ const downloadAllOrdersPDF = (orders) => {
     (o._id || "").slice(-6).toUpperCase(),
     o.customerName || "-",
     o.mobileNumber || "-",
+    o.alternateMobileNumber || "-",
     o.productType || "-",
     o.numberOfUnits || 0,
     `Rs.${o.totalAmount || 0}`,
@@ -113,7 +116,7 @@ const downloadAllOrdersPDF = (orders) => {
 
   autoTable(doc, {
     startY: y,
-    head: [["ID", "Customer", "Mobile", "Product", "Units", "Total", "Advance", "Status", "Date"]],
+    head: [["ID", "Customer", "Mobile", "Alt Mobile", "Product", "Units", "Total", "Advance", "Status", "Date"]],
     body: rows,
     theme: "grid",
     headStyles: { fillColor: [6, 182, 212], fontSize: 8 },
@@ -128,6 +131,7 @@ const OrderManagePage = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editRow, setEditRow] = useState(null);
+  const [toast, setToast] = useState(null);
 
   useEffect(() => {
     if (editRow) window.scrollTo({ top: 0, behavior: "smooth" });
@@ -165,10 +169,17 @@ const OrderManagePage = () => {
     setEditRow(row);
   };
 
+  const clearToast = useCallback(() => setToast(null), []);
+
   const handleSaveEdit = async (form) => {
-    await api.put(`/orders/${form._id}`, form);
-    setEditRow(null);
-    handleRefresh();
+    try {
+      await api.put(`/orders/${form._id}`, form);
+      setToast("Order updated successfully!");
+      handleRefresh();
+      setTimeout(() => setEditRow(null), 500);
+    } catch (error) {
+      setToast(error.response?.data?.message || "Failed to update order");
+    }
   };
 
   const handleDownloadPDF = () => {
@@ -178,6 +189,7 @@ const OrderManagePage = () => {
   const columns = [
     { key: "customerName", label: "Customer" },
     { key: "mobileNumber", label: "Mobile" },
+    { key: "alternateMobileNumber", label: "Alt Mobile", render: (row) => row.alternateMobileNumber || "-" },
     { key: "productType", label: "Product" },
     { key: "numberOfUnits", label: "Units" },
     { key: "totalAmount", label: "Total", render: (row) => formatCurrency(row.totalAmount) },
@@ -248,7 +260,7 @@ const OrderManagePage = () => {
           data={orders}
           statusOptions={["Pending", "Approved", "Processing", "Delivered", "Cancelled"]}
           onStatusChange={updateOrderStatus}
-          searchKeys={["customerName", "mobileNumber", "productType", "orderStatus", "parcelStatus", "trackingId", "courierCompany"]}
+          searchKeys={["customerName", "mobileNumber", "alternateMobileNumber", "productType", "orderStatus", "parcelStatus", "trackingId", "courierCompany"]}
           onEdit={handleEdit}
           onDelete={handleDelete}
         />
@@ -257,12 +269,14 @@ const OrderManagePage = () => {
       {editRow && (
         <EditModal
           title="Order"
-          fields={orderEditFields}
+          fields={editRow.productType === "Other" ? orderEditFields : orderEditFields.filter((f) => f.key !== "customProductName")}
           data={editRow}
           onSave={handleSaveEdit}
           onClose={() => setEditRow(null)}
         />
       )}
+
+      {toast && <Toast message={toast} type={toast.includes("successfully") ? "success" : "error"} onClose={clearToast} />}
     </section>
   );
 };

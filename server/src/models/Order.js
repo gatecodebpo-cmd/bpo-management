@@ -6,6 +6,7 @@ const orderSchema = new mongoose.Schema(
     employeeName: { type: String, default: "" },
     customerName: { type: String, required: true, trim: true },
     mobileNumber: { type: String, required: true, trim: true },
+    alternateMobileNumber: { type: String, default: "", trim: true },
     fullAddress: { type: String, required: true, trim: true },
     pincode: { type: String, required: true, trim: true },
     productType: {

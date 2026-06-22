@@ -1,12 +1,14 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import Field from "../components/Field";
+import Toast from "../components/Toast";
 import { isValidMobile, isValidPincode } from "../utils/validators";
 
 const orderInitialState = {
   customerName: "",
   mobileNumber: "",
+  alternateMobileNumber: "",
   fullAddress: "",
   pincode: "",
   productType: "GPS",
@@ -41,8 +43,8 @@ const PublicDashboardPage = () => {
   const [returnErrors, setReturnErrors] = useState({});
   const [orderLoading, setOrderLoading] = useState(false);
   const [returnLoading, setReturnLoading] = useState(false);
-  const [orderMessage, setOrderMessage] = useState("");
-  const [returnMessage, setReturnMessage] = useState("");
+  const [orderToast, setOrderToast] = useState(null);
+  const [returnToast, setReturnToast] = useState(null);
   const [paymentFile, setPaymentFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState("");
   const [uploadState, setUploadState] = useState("");
@@ -75,6 +77,7 @@ const PublicDashboardPage = () => {
   };
 
   const preventNonNumericKey = (e) => {
+    if (e.ctrlKey || e.metaKey) return;
     if (!/[0-9]/.test(e.key) && !["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab"].includes(e.key)) {
       e.preventDefault();
     }
@@ -91,6 +94,7 @@ const PublicDashboardPage = () => {
     const next = {};
     if (!candidate.customerName.trim()) next.customerName = "Customer name is required";
     if (!isValidMobile(candidate.mobileNumber)) next.mobileNumber = "Enter valid 10-digit mobile number";
+    if (candidate.alternateMobileNumber && !isValidMobile(candidate.alternateMobileNumber)) next.alternateMobileNumber = "Enter valid 10-digit number";
     if (!candidate.fullAddress.trim()) next.fullAddress = "Address is required";
     if (!isValidPincode(candidate.pincode)) next.pincode = "Enter valid 6-digit pincode";
     if (candidate.productType === "Other" && !candidate.customProductName.trim()) {
@@ -104,6 +108,9 @@ const PublicDashboardPage = () => {
       next.advanceAmount = "Advance amount cannot exceed total amount";
     }
     setOrderErrors(next);
+    if (Object.keys(next).length) {
+      setTimeout(() => document.querySelector(".field-invalid")?.scrollIntoView({ behavior: "smooth", block: "center" }), 0);
+    }
     return Object.keys(next).length === 0;
   };
 
@@ -119,14 +126,21 @@ const PublicDashboardPage = () => {
       next.customReason = "Custom return reason is required";
     }
     setReturnErrors(next);
+    if (Object.keys(next).length) {
+      setTimeout(() => document.querySelector(".field-invalid")?.scrollIntoView({ behavior: "smooth", block: "center" }), 0);
+    }
     return Object.keys(next).length === 0;
   };
 
   const onOrderChange = (key, value) => {
     setOrderForm((prev) => ({ ...prev, [key]: value }));
+    setOrderErrors((prev) => ({ ...prev, [key]: "" }));
   };
 
-  const onReturnChange = (key, value) => setReturnForm((prev) => ({ ...prev, [key]: value }));
+  const onReturnChange = (key, value) => {
+    setReturnForm((prev) => ({ ...prev, [key]: value }));
+    setReturnErrors((prev) => ({ ...prev, [key]: "" }));
+  };
 
   const handleScreenshot = (file) => {
     setUploadState("");
@@ -154,15 +168,18 @@ const PublicDashboardPage = () => {
     setOrderErrors((prev) => ({ ...prev, paymentScreenshot: "" }));
   };
 
+  const clearOrderToast = useCallback(() => setOrderToast(null), []);
+  const clearReturnToast = useCallback(() => setReturnToast(null), []);
+
   const onOrderSubmit = async (e) => {
     e.preventDefault();
-    setOrderMessage("");
     if (!validateOrder()) return;
     try {
       setOrderLoading(true);
       const payload = new FormData();
       payload.append("customerName", orderForm.customerName);
       payload.append("mobileNumber", orderForm.mobileNumber);
+      if (orderForm.alternateMobileNumber) payload.append("alternateMobileNumber", orderForm.alternateMobileNumber);
       payload.append("fullAddress", orderForm.fullAddress);
       payload.append("pincode", orderForm.pincode);
       payload.append("productType", orderForm.productType);
@@ -176,7 +193,7 @@ const PublicDashboardPage = () => {
       await api.post("/orders", payload, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      setOrderMessage("Order submitted successfully.");
+      setOrderToast("Order submitted successfully!");
       setOrderForm(orderInitialState);
       setOrderErrors({});
       setPaymentFile(null);
@@ -184,7 +201,7 @@ const PublicDashboardPage = () => {
       setPreviewUrl("");
       setUploadState("");
     } catch (error) {
-      setOrderMessage(error.response?.data?.message || "Failed to submit order");
+      setOrderToast(error.response?.data?.message || "Failed to submit order");
     } finally {
       setOrderLoading(false);
     }
@@ -192,16 +209,15 @@ const PublicDashboardPage = () => {
 
   const onReturnSubmit = async (e) => {
     e.preventDefault();
-    setReturnMessage("");
     if (!validateReturn()) return;
     try {
       setReturnLoading(true);
       await api.post("/returns", { ...returnForm, numberOfUnitsReturning: Number(returnForm.numberOfUnitsReturning) });
-      setReturnMessage("Return request submitted successfully.");
+      setReturnToast("Return request submitted successfully!");
       setReturnForm(returnInitialState);
       setReturnErrors({});
     } catch (error) {
-      setReturnMessage(error.response?.data?.message || "Failed to submit return request");
+      setReturnToast(error.response?.data?.message || "Failed to submit return request");
     } finally {
       setReturnLoading(false);
     }
@@ -299,6 +315,17 @@ const PublicDashboardPage = () => {
                       value={orderForm.mobileNumber}
                       onKeyDown={preventNonNumericKey}
                       onChange={(e) => onOrderChange("mobileNumber", sanitizeDigits(e.target.value, 10))}
+                    />
+                  </Field>
+                  <Field label="Alternate Mobile (Optional)" error={orderErrors.alternateMobileNumber}>
+                    <input
+                      className={getFieldClass("alternateMobileNumber", true)}
+                      placeholder="10-digit number"
+                      inputMode="numeric"
+                      maxLength={10}
+                      value={orderForm.alternateMobileNumber}
+                      onKeyDown={preventNonNumericKey}
+                      onChange={(e) => onOrderChange("alternateMobileNumber", sanitizeDigits(e.target.value, 10))}
                     />
                   </Field>
                   <Field label="Full Address" error={orderErrors.fullAddress}>
@@ -425,7 +452,7 @@ const PublicDashboardPage = () => {
                 <button className="primary-btn form-submit-btn" type="submit" disabled={orderLoading}>
                   {orderLoading ? "Submitting..." : "Submit Order"}
                 </button>
-                {orderMessage && <p className={`form-message ${orderMessage.includes("successfully") ? "success" : "error"}`}>{orderMessage}</p>}
+                {orderToast && <Toast message={orderToast} type={orderToast.includes("successfully") ? "success" : "error"} onClose={clearOrderToast} />}
               </div>
             </form>
           </div>
@@ -550,7 +577,7 @@ const PublicDashboardPage = () => {
                 <button className="primary-btn form-submit-btn" type="submit" disabled={returnLoading}>
                   {returnLoading ? "Submitting..." : "Submit Return"}
                 </button>
-                {returnMessage && <p className={`form-message ${returnMessage.includes("successfully") ? "success" : "error"}`}>{returnMessage}</p>}
+                {returnToast && <Toast message={returnToast} type={returnToast.includes("successfully") ? "success" : "error"} onClose={clearReturnToast} />}
               </div>
             </form>
           </div>
