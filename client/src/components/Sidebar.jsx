@@ -69,21 +69,7 @@ const Sidebar = () => {
   const navigate = useNavigate();
   const [ordersOpen, setOrdersOpen] = useState(true);
   const [returnsOpen, setReturnsOpen] = useState(true);
-  const [usersOpen, setUsersOpen] = useState(false);
-  const [users, setUsers] = useState([]);
 
-  const fetchUsers = useCallback(async () => {
-    try {
-      const res = await api.get("/auth/users");
-      setUsers(res.data.data || []);
-    } catch {
-      setUsers([]);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
 
   const handleLogout = () => {
     const loginPath = localStorage.getItem("dashboard_login_path") || "/login";
@@ -116,6 +102,10 @@ const Sidebar = () => {
               {label}
             </NavLink>
           ))}
+          <NavLink to="/admin/users" className="sidebar-link" onClick={handleNavClick}>
+            <span className="sidebar-icon"><UserPlusIcon /></span>
+            User Details
+          </NavLink>
           <div className="sidebar-dropdown">
             <button className="sidebar-link sidebar-dropdown-btn" onClick={() => setOrdersOpen(!ordersOpen)}>
               <span className="sidebar-icon"><OrderIcon /></span>
@@ -124,7 +114,6 @@ const Sidebar = () => {
             </button>
             {ordersOpen && (
               <div className="sidebar-submenu">
-                <NavLink to="/admin/orders" className="sidebar-sublink" onClick={handleNavClick}>New Order</NavLink>
                 <NavLink to="/admin/orders/manage" className="sidebar-sublink" onClick={handleNavClick}>Order Management</NavLink>
                 <NavLink to="/admin/orders/history" className="sidebar-sublink" onClick={handleNavClick}>Order History</NavLink>
               </div>
@@ -138,37 +127,8 @@ const Sidebar = () => {
             </button>
             {returnsOpen && (
               <div className="sidebar-submenu">
-                <NavLink to="/admin/returns" className="sidebar-sublink" onClick={handleNavClick}>New Return</NavLink>
                 <NavLink to="/admin/returns/manage" className="sidebar-sublink" onClick={handleNavClick}>Return Management</NavLink>
                 <NavLink to="/admin/returns/history" className="sidebar-sublink" onClick={handleNavClick}>Return History</NavLink>
-              </div>
-            )}
-          </div>
-          <div className="sidebar-dropdown">
-            <div className="sidebar-link sidebar-dropdown-btn">
-              <NavLink to="/admin/users" className="sidebar-dropdown-label" onClick={() => { setUsersOpen(false); handleNavClick(); }}>
-                <span className="sidebar-icon"><UserPlusIcon /></span>
-                User Details
-              </NavLink>
-              <button className="sidebar-dropdown-chevron" onClick={() => setUsersOpen(!usersOpen)}>
-                <ChevronDown open={usersOpen} />
-              </button>
-            </div>
-            {usersOpen && (
-              <div className="sidebar-submenu">
-                <NavLink to="/admin/register" className="sidebar-sublink" onClick={() => { setUsersOpen(false); handleNavClick(); }}>+ Register New</NavLink>
-                {users.map((u) => (
-                  <NavLink key={u._id} to={`/admin/register/${u._id}`} className="sidebar-sublink" onClick={() => { setUsersOpen(false); handleNavClick(); }}>
-                    <span className="sidebar-sub-user">
-                      <span className="sidebar-sub-user-avatar">{(u.name || "?").charAt(0).toUpperCase()}</span>
-                      <span className="sidebar-sub-user-info">
-                        <span className="sidebar-sub-user-name">{u.name}</span>
-                        <span className="sidebar-sub-user-email">{u.email}</span>
-                        <span className="sidebar-sub-user-detail">{u.username && `@${u.username}`} {u.phoneNumber && `| ${u.phoneNumber}`}</span>
-                      </span>
-                    </span>
-                  </NavLink>
-                ))}
               </div>
             )}
           </div>

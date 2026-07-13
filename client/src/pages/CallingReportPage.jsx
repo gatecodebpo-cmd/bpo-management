@@ -103,6 +103,14 @@ const downloadCallingPDF = (records, filter, startDate, endDate) => {
 };
 
 const CallingReportPage = () => {
+  const today = (() => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  })();
+
   const [records, setRecords] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [selectedEmployee, setSelectedEmployee] = useState("");
@@ -115,6 +123,8 @@ const CallingReportPage = () => {
     try {
       const res = await api.get("/auth/users");
       const emps = (res.data.data || []).filter((u) => u.role === "employee");
+      // Sort alphabetically by employee name
+      emps.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
       setEmployees(emps);
     } catch {
       setEmployees([]);
@@ -225,9 +235,28 @@ const CallingReportPage = () => {
         ))}
         {filter === "custom" && (
           <>
-            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} style={{ width: "auto", padding: "8px 12px", fontSize: 13 }} />
+            <input
+              type="date"
+              value={startDate}
+              max={today}
+              onChange={(e) => {
+                const val = e.target.value;
+                setStartDate(val);
+                if (endDate && val > endDate) {
+                  setEndDate("");
+                }
+              }}
+              style={{ width: "auto", padding: "8px 12px", fontSize: 13 }}
+            />
             <span style={{ color: "var(--text-muted)", alignSelf: "center" }}>to</span>
-            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} style={{ width: "auto", padding: "8px 12px", fontSize: 13 }} />
+            <input
+              type="date"
+              value={endDate}
+              min={startDate}
+              max={today}
+              onChange={(e) => setEndDate(e.target.value)}
+              style={{ width: "auto", padding: "8px 12px", fontSize: 13 }}
+            />
           </>
         )}
         <button onClick={fetchRecords} className="primary-btn" style={{ padding: "8px 16px", fontSize: 13 }}>

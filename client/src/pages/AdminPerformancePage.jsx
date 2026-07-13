@@ -3,12 +3,27 @@ import { api } from "../api/client";
 
 const FILTERS = ["today", "yesterday", "week", "month", "custom"];
 
+const SearchIcon = () => (
+  <svg viewBox="0 0 24 24" style={{ width: 16, height: 16, position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)", pointerEvents: "none" }}>
+    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+  </svg>
+);
+
 const AdminPerformancePage = () => {
+  const today = (() => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  })();
+
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("today");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const fetchPerformance = useCallback(async () => {
     try {
@@ -28,6 +43,13 @@ const AdminPerformancePage = () => {
   }, [filter, startDate, endDate]);
 
   useEffect(() => { fetchPerformance(); }, [fetchPerformance]);
+
+  const filteredEmployees = employees.filter((emp) => {
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return true;
+    const nameStr = (emp.username || emp.name || "").toLowerCase().trim();
+    return nameStr.startsWith(q);
+  });
 
   const formatLabel = (f) => {
     switch (f) {
@@ -72,13 +94,22 @@ const AdminPerformancePage = () => {
             <input
               type="date"
               value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
+              max={today}
+              onChange={(e) => {
+                const val = e.target.value;
+                setStartDate(val);
+                if (endDate && val > endDate) {
+                  setEndDate("");
+                }
+              }}
               style={{ width: "auto", padding: "8px 12px", fontSize: 13 }}
             />
             <span style={{ color: "var(--text-muted)" }}>to</span>
             <input
               type="date"
               value={endDate}
+              min={startDate}
+              max={today}
               onChange={(e) => setEndDate(e.target.value)}
               style={{ width: "auto", padding: "8px 12px", fontSize: 13 }}
             />
@@ -90,15 +121,23 @@ const AdminPerformancePage = () => {
       </div>
 
       <div className="table-shell glass-card">
-        <div className="table-header">
-          <h3>Employee Activity ({employees.length})</h3>
+        <div className="table-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+          <h3>Employee Activity ({filteredEmployees.length})</h3>
+          <div className="table-search-wrap">
+            <SearchIcon />
+            <input
+              placeholder="Search by username..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{ paddingLeft: 32 }}
+            />
+          </div>
         </div>
         <div className="table-scroll">
           <table>
             <thead>
               <tr>
-                <th>EMPLOYEE NAME</th>
-                <th>EMAIL</th>
+                <th>USERNAME OF EMPLOYEE</th>
                 <th>ORDERS TODAY</th>
                 <th>RETURNS TODAY</th>
                 <th>TOTAL ENTRIES</th>
@@ -107,22 +146,21 @@ const AdminPerformancePage = () => {
             <tbody>
               {loading && (
                 <tr>
-                  <td colSpan={5} style={{ textAlign: "center", padding: 24, color: "var(--text-muted)" }}>
+                  <td colSpan={4} style={{ textAlign: "center", padding: 24, color: "var(--text-muted)" }}>
                     Loading...
                   </td>
                 </tr>
               )}
-              {!loading && employees.length === 0 && (
+              {!loading && filteredEmployees.length === 0 && (
                 <tr>
-                  <td colSpan={5} style={{ textAlign: "center", padding: 24, color: "var(--text-muted)" }}>
+                  <td colSpan={4} style={{ textAlign: "center", padding: 24, color: "var(--text-muted)" }}>
                     No employees found
                   </td>
                 </tr>
               )}
-              {employees.map((emp) => (
+              {filteredEmployees.map((emp) => (
                 <tr key={emp._id}>
-                  <td style={{ fontWeight: 600, color: "var(--text-heading)" }}>{emp.name}</td>
-                  <td>{emp.email}</td>
+                  <td style={{ fontWeight: 600, color: "var(--text-heading)" }}>{emp.username || emp.name}</td>
                   <td>
                     <span className="status-badge status-processing">{emp.ordersToday}</span>
                   </td>

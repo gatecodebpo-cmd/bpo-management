@@ -12,82 +12,6 @@ const initialState = {
   role: "employee",
 };
 
-const UserDetailView = ({ userId, onEdit }) => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
-
-  const fetchUser = async () => {
-    try {
-      setLoading(true);
-      const res = await api.get(`/auth/users/${userId}`);
-      setUser(res.data.data);
-    } catch {
-      setUser(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => { fetchUser(); }, [userId]);
-
-  const handleDelete = async () => {
-    if (!window.confirm(`Are you sure you want to delete "${user?.name}"? This action cannot be undone.`)) return;
-    try {
-      await api.delete(`/auth/users/${userId}`);
-      navigate("/admin/register");
-    } catch {
-      alert("Failed to delete user");
-    }
-  };
-
-  if (loading) return <p style={{ color: "var(--text-muted)" }}>Loading user details...</p>;
-  if (!user) return <p style={{ color: "var(--danger)" }}>User not found</p>;
-
-  const createdDate = user.createdAt
-    ? new Date(user.createdAt).toLocaleDateString("en-IN", {
-        day: "numeric", month: "short", year: "numeric"
-      })
-    : "-";
-
-  return (
-    <div className="user-details-card glass-card">
-      <div className="user-details-head">
-        <div className="user-details-avatar">
-          {(user.name || "?").charAt(0).toUpperCase()}
-        </div>
-        <div>
-          <h4>{user.name}</h4>
-          <span className="user-details-role">{user.role}</span>
-        </div>
-      </div>
-      <div className="user-details-body">
-        <div className="user-detail-row">
-          <span className="user-detail-label">Username</span>
-          <span className="user-detail-value">{user.username || "-"}</span>
-        </div>
-        <div className="user-detail-row">
-          <span className="user-detail-label">Email</span>
-          <span className="user-detail-value">{user.email}</span>
-        </div>
-        <div className="user-detail-row">
-          <span className="user-detail-label">Phone</span>
-          <span className="user-detail-value">{user.phoneNumber || "-"}</span>
-        </div>
-        <div className="user-detail-row">
-          <span className="user-detail-label">Registered</span>
-          <span className="user-detail-value">{createdDate}</span>
-        </div>
-      </div>
-      <div style={{ marginTop: 16, display: "flex", gap: 12 }}>
-        <Link to="/admin/register" className="primary-btn" style={{ textDecoration: "none", display: "inline-flex" }}>Back</Link>
-        <button onClick={onEdit} className="primary-btn" style={{ background: "#3b82f6", border: "none", cursor: "pointer" }}>Edit</button>
-        <button onClick={handleDelete} className="primary-btn" style={{ background: "#ef4444", border: "none", cursor: "pointer" }}>Delete</button>
-      </div>
-    </div>
-  );
-};
-
 const RegistrationForm = () => {
   const [form, setForm] = useState(initialState);
   const [errors, setErrors] = useState({});
@@ -129,11 +53,9 @@ const RegistrationForm = () => {
     if (!validate()) return;
     try {
       setLoading(true);
-      const res = await api.post("/auth/register", form);
-      setMessage("User registered successfully! Login credentials have been created.");
-      setForm(initialState);
-      setErrors({});
-      setShowPassword(false);
+      await api.post("/auth/register", form);
+      alert("User registered successfully!");
+      navigate("/admin/users");
     } catch (error) {
       setMessage(error.response?.data?.message || "Registration failed");
     } finally {
@@ -266,7 +188,8 @@ const UserEditForm = ({ userId, onCancel }) => {
     setSubmitting(true);
     try {
       await api.put(`/auth/users/${userId}`, form);
-      navigate(`/admin/register/${userId}`);
+      alert("User updated successfully!");
+      navigate("/admin/users");
     } catch (error) {
       setMessage(error.response?.data?.message || "Update failed");
     } finally {
@@ -356,29 +279,31 @@ const UserEditForm = ({ userId, onCancel }) => {
 
 const RegisterPage = () => {
   const { id } = useParams();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const isEdit = searchParams.get("edit") === "true";
+  const navigate = useNavigate();
 
-  const handleEdit = () => setSearchParams({ edit: "true" });
-  const handleCancelEdit = () => setSearchParams({});
+  useEffect(() => {
+    if (id && !isEdit) {
+      navigate("/admin/users", { replace: true });
+    }
+  }, [id, isEdit, navigate]);
 
   return (
     <section className="form-page">
       <div className="form-head">
         <div>
           <h2>
-            {id && isEdit ? "Edit User" : id ? "User Details" : "Register New User"}
+            {id ? "Edit User" : "Register New User"}
           </h2>
           <p className="form-subtitle">
-            {id && isEdit ? "Update user information" : id ? "View full user information" : "Fill in the user details below"}
+            {id ? "Update user information" : "Fill in the user details below"}
           </p>
         </div>
       </div>
 
       {id && isEdit ? (
-        <UserEditForm userId={id} onCancel={handleCancelEdit} />
-      ) : id ? (
-        <UserDetailView userId={id} onEdit={handleEdit} />
+        <UserEditForm userId={id} onCancel={() => navigate("/admin/users")} />
       ) : (
         <RegistrationForm />
       )}

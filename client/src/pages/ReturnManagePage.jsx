@@ -114,10 +114,23 @@ const downloadAllReturnsPDF = (returns) => {
 };
 
 const ReturnManagePage = () => {
+  const todayStr = (() => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  })();
+
   const [returns, setReturns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editRow, setEditRow] = useState(null);
   const [toast, setToast] = useState(null);
+
+  const todayReturns = returns.filter((r) => {
+    if (!r.createdAt) return false;
+    return r.createdAt.split("T")[0] === todayStr;
+  });
 
   useEffect(() => {
     if (editRow) window.scrollTo({ top: 0, behavior: "smooth" });
@@ -164,7 +177,7 @@ const ReturnManagePage = () => {
   };
 
   const handleDownloadPDF = () => {
-    downloadAllReturnsPDF(returns);
+    downloadAllReturnsPDF(todayReturns);
   };
 
   return (
@@ -190,7 +203,7 @@ const ReturnManagePage = () => {
         <DataTable
           title="Returns"
           columns={columns}
-          data={returns}
+          data={todayReturns}
           statusOptions={["Return Requested", "Return Approved", "Pickup Scheduled", "Returned Successfully", "Return Rejected"]}
           onStatusChange={updateReturnStatus}
           searchKeys={["customerName", "mobileNumber", "productType", "returnStatus"]}

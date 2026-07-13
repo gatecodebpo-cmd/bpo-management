@@ -128,7 +128,13 @@ const EmployeeDashboardPage = () => {
             <input
               type="date"
               value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
+              onChange={(e) => {
+                const val = e.target.value;
+                setStartDate(val);
+                if (endDate && val > endDate) {
+                  setEndDate("");
+                }
+              }}
               max={todayStr}
               style={{ background: "rgba(255,255,255,0.06)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text)", padding: "6px 10px", fontSize: 13 }}
             />
@@ -137,6 +143,7 @@ const EmployeeDashboardPage = () => {
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
+              min={startDate}
               max={todayStr}
               style={{ background: "rgba(255,255,255,0.06)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text)", padding: "6px 10px", fontSize: 13 }}
             />

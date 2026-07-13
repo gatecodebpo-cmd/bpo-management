@@ -128,10 +128,23 @@ const downloadAllOrdersPDF = (orders) => {
 };
 
 const OrderManagePage = () => {
+  const todayStr = (() => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  })();
+
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editRow, setEditRow] = useState(null);
   const [toast, setToast] = useState(null);
+
+  const todayOrders = orders.filter((o) => {
+    if (!o.createdAt) return false;
+    return o.createdAt.split("T")[0] === todayStr;
+  });
 
   useEffect(() => {
     if (editRow) window.scrollTo({ top: 0, behavior: "smooth" });
@@ -183,7 +196,7 @@ const OrderManagePage = () => {
   };
 
   const handleDownloadPDF = () => {
-    downloadAllOrdersPDF(orders);
+    downloadAllOrdersPDF(todayOrders);
   };
 
   const columns = [
@@ -257,7 +270,7 @@ const OrderManagePage = () => {
         <DataTable
           title="Orders"
           columns={columns}
-          data={orders}
+          data={todayOrders}
           statusOptions={["Pending", "Approved", "Processing", "Delivered", "Cancelled"]}
           onStatusChange={updateOrderStatus}
           searchKeys={["customerName", "mobileNumber", "alternateMobileNumber", "productType", "orderStatus", "parcelStatus", "trackingId", "courierCompany"]}

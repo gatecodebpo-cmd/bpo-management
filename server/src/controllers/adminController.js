@@ -56,7 +56,7 @@ export const getEmployeePerformance = async (req, res, next) => {
     const { filter = "today", startDate, endDate } = req.query;
     const { start, end } = getDateRange(filter, startDate, endDate);
 
-    const employees = await User.find({ role: "employee" }, { name: 1, email: 1 });
+    const employees = await User.find({ role: "employee" }, { name: 1, email: 1, username: 1 });
 
     const performance = await Promise.all(
       employees.map(async (emp) => {
@@ -79,6 +79,7 @@ export const getEmployeePerformance = async (req, res, next) => {
           _id: emp._id,
           name: emp.name,
           email: emp.email,
+          username: emp.username,
           ordersToday,
           returnsToday,
           totalEntries

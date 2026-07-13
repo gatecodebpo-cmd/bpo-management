@@ -286,6 +286,14 @@ const downloadEmployeePDF = async (employee, startDate, endDate) => {
 };
 
 const EmployeeDetailsPage = () => {
+  const today = (() => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  })();
+
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -295,6 +303,7 @@ const EmployeeDetailsPage = () => {
   const [details, setDetails] = useState(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [downloading, setDownloading] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const fetchEmployees = useCallback(async () => {
     try {
@@ -315,19 +324,37 @@ const EmployeeDetailsPage = () => {
     fetchEmployees();
   }, [fetchEmployees]);
 
+  useEffect(() => {
+    if (isModalOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isModalOpen]);
+
   const filtered = useMemo(() => {
-    if (!search.trim()) return employees;
-    const q = search.toLowerCase();
-    return employees.filter((e) =>
-      (e.name || "").toLowerCase().includes(q) ||
-      (e.email || "").toLowerCase().includes(q) ||
-      (e.phoneNumber || "").toLowerCase().includes(q) ||
-      (e.username || "").toLowerCase().includes(q)
-    );
+    const q = search.toLowerCase().trim();
+    if (!q) return employees;
+    return employees.filter((e) => {
+      const nameVal = (e.name || "").toLowerCase().trim();
+      const emailVal = (e.email || "").toLowerCase().trim();
+      const phoneVal = (e.phoneNumber || "").toLowerCase().trim();
+      const userVal = (e.username || "").toLowerCase().trim();
+      return (
+        nameVal.startsWith(q) ||
+        emailVal.startsWith(q) ||
+        phoneVal.startsWith(q) ||
+        userVal.startsWith(q)
+      );
+    });
   }, [employees, search]);
 
-  const handleSelect = async (emp) => {
+  const handleViewDetails = async (emp) => {
     setSelected(emp);
+    setIsModalOpen(true);
     setDetailsLoading(true);
     try {
       const params = {};
@@ -360,11 +387,28 @@ const EmployeeDetailsPage = () => {
       <div style={{ display: "flex", gap: 12, marginBottom: 20, flexWrap: "wrap", alignItems: "end" }}>
         <label className="field-wrap" style={{ minWidth: 160 }}>
           <span>From Date</span>
-          <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+          <input
+            type="date"
+            value={startDate}
+            max={today}
+            onChange={(e) => {
+              const val = e.target.value;
+              setStartDate(val);
+              if (endDate && val > endDate) {
+                setEndDate("");
+              }
+            }}
+          />
         </label>
         <label className="field-wrap" style={{ minWidth: 160 }}>
           <span>To Date</span>
-          <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+          <input
+            type="date"
+            value={endDate}
+            min={startDate}
+            max={today}
+            onChange={(e) => setEndDate(e.target.value)}
+          />
         </label>
         {(startDate || endDate) && (
           <button className="primary-btn" style={{ background: "#64748b" }} onClick={() => { setStartDate(""); setEndDate(""); }}>
@@ -392,41 +436,59 @@ const EmployeeDetailsPage = () => {
           <table>
             <thead>
               <tr>
-                <th>NAME</th>
-                <th>EMAIL</th>
-                <th>PHONE</th>
                 <th>USERNAME</th>
+                <th>PHONE</th>
                 <th>ORDERS</th>
                 <th>RETURNS</th>
                 <th>CALLING</th>
                 <th>SALES</th>
                 <th>REVENUE</th>
-                <th>ACTIONS</th>
+                <th style={{ textAlign: "center" }}>ACTIONS</th>
               </tr>
             </thead>
             <tbody>
-              {loading && <tr><td colSpan={10} style={{ textAlign: "center", padding: 24, color: "#94a3b8" }}>Loading...</td></tr>}
-              {!loading && filtered.length === 0 && <tr><td colSpan={10} style={{ textAlign: "center", padding: 24, color: "#94a3b8" }}>No employees found</td></tr>}
+              {loading && <tr><td colSpan={8} style={{ textAlign: "center", padding: 24, color: "#94a3b8" }}>Loading...</td></tr>}
+              {!loading && filtered.length === 0 && <tr><td colSpan={8} style={{ textAlign: "center", padding: 24, color: "#94a3b8" }}>No employees found</td></tr>}
               {filtered.map((emp) => (
-                <tr key={emp._id} style={{ cursor: "pointer", background: selected?._id === emp._id ? "rgba(6,182,212,0.06)" : "transparent" }} onClick={() => handleSelect(emp)}>
-                  <td style={{ fontWeight: 600 }}>{emp.name}</td>
-                  <td>{emp.email}</td>
+                <tr key={emp._id} style={{ background: selected?._id === emp._id ? "rgba(6,182,212,0.06)" : "transparent" }}>
+                  <td style={{ fontWeight: 600 }}>{emp.username || emp.name}</td>
                   <td>{emp.phoneNumber || "-"}</td>
-                  <td>{emp.username || "-"}</td>
                   <td><span style={{ fontWeight: 700, color: "#3b82f6" }}>{emp.orderCount || 0}</span></td>
                   <td><span style={{ fontWeight: 700, color: "#f59e0b" }}>{emp.returnCount || 0}</span></td>
                   <td><span style={{ fontWeight: 700, color: "#10b981" }}>{emp.callingCount || 0}</span></td>
                   <td><span style={{ fontWeight: 700, color: "#8b5cf6" }}>Rs.{(emp.totalSales || 0).toLocaleString("en-IN")}</span></td>
                   <td><span style={{ fontWeight: 700, color: "#ec4899" }}>Rs.{(emp.totalRevenue || 0).toLocaleString("en-IN")}</span></td>
                   <td>
-                    <button
-                      className="primary-btn"
-                      style={{ padding: "6px 14px", fontSize: 12, background: "#10b981" }}
-                      onClick={(e) => { e.stopPropagation(); handleDownload(emp); }}
-                      disabled={downloading === emp._id}
-                    >
-                      {downloading === emp._id ? "Generating..." : "PDF"}
-                    </button>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center", justifyContent: "center", flexWrap: "nowrap" }}>
+                      <button
+                        title="View Details"
+                        onClick={(e) => { e.stopPropagation(); handleViewDetails(emp); }}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          padding: "6px",
+                          borderRadius: "6px",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          color: "#06b6d4"
+                        }}
+                      >
+                        <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                          <circle cx="12" cy="12" r="3" />
+                        </svg>
+                      </button>
+                      <button
+                        className="primary-btn"
+                        style={{ padding: "6px 14px", fontSize: 12, background: "#10b981" }}
+                        onClick={(e) => { e.stopPropagation(); handleDownload(emp); }}
+                        disabled={downloading === emp._id}
+                      >
+                        {downloading === emp._id ? "Generating..." : "PDF"}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -435,135 +497,141 @@ const EmployeeDetailsPage = () => {
         </div>
       </div>
 
-      {selected && (
-        <div className="glass-card" style={{ padding: 28 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-            <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "var(--text-heading)" }}>
-              {selected.name} — Full Details
-              {(startDate || endDate) && <span style={{ fontSize: 13, fontWeight: 400, color: "var(--text-muted)", marginLeft: 12 }}>({startDate || "..."} to {endDate || "..."})</span>}
-            </h3>
-            <button
-              className="primary-btn"
-              style={{ padding: "6px 14px", fontSize: 12, background: "#64748b" }}
-              onClick={() => setSelected(null)}
-            >
-              Close
-            </button>
-          </div>
+      {isModalOpen && selected && (
+        <div className="modal-overlay" onClick={() => { setIsModalOpen(false); setSelected(null); setDetails(null); }}>
+          <div className="modal-box" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "1000px", width: "95%" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <h3 className="modal-title" style={{ margin: 0 }}>
+                {selected.name} ({selected.username}) — Full Details
+                {(startDate || endDate) && <span style={{ fontSize: 13, fontWeight: 400, color: "var(--text-muted)", marginLeft: 12 }}>({startDate || "..."} to {endDate || "..."})</span>}
+              </h3>
+              <button
+                className="primary-btn"
+                style={{ padding: "6px 14px", fontSize: 12, background: "#64748b" }}
+                onClick={() => { setIsModalOpen(false); setSelected(null); setDetails(null); }}
+              >
+                Close
+              </button>
+            </div>
 
-          {detailsLoading && <p style={{ color: "var(--text-muted)", textAlign: "center" }}>Loading details...</p>}
+            {detailsLoading && <p style={{ color: "var(--text-muted)", textAlign: "center", padding: "40px 0" }}>Loading details...</p>}
 
-          {details && (
-            <>
-              <div className="table-shell glass-card" style={{ padding: 20, marginBottom: 20 }}>
-                <div className="table-header"><h3>Orders ({details.orders.length})</h3></div>
-                <div className="table-scroll">
-                  <table>
-                    <thead>
-                      <tr><th>ID</th><th>Customer</th><th>Product</th><th>Qty</th><th>Amount</th><th>Status</th><th>Date</th></tr>
-                    </thead>
-                    <tbody>
-                      {details.orders.length === 0 && <tr><td colSpan={7} style={{ textAlign: "center", padding: 20, color: "#94a3b8" }}>No orders</td></tr>}
-                      {details.orders.map((o) => (
-                        <tr key={o._id}>
-                          <td style={{ fontFamily: "monospace", fontSize: 12 }}>{(o._id || "").slice(-6).toUpperCase()}</td>
-                          <td>{o.customerName || "-"}</td>
-                          <td>{o.productType || "-"}</td>
-                          <td>{o.numberOfUnits || 0}</td>
-                          <td>Rs.{o.totalAmount || 0}</td>
-                          <td>{statusBadge(o.orderStatus)}</td>
-                          <td>{formatDateTime(o.createdAt)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              <div className="table-shell glass-card" style={{ padding: 20, marginBottom: 20 }}>
-                <div className="table-header"><h3>Returns ({details.returns.length})</h3></div>
-                <div className="table-scroll">
-                  <table>
-                    <thead>
-                      <tr><th>ID</th><th>Customer</th><th>Product</th><th>Qty</th><th>Reason</th><th>Status</th><th>Date</th></tr>
-                    </thead>
-                    <tbody>
-                      {details.returns.length === 0 && <tr><td colSpan={7} style={{ textAlign: "center", padding: 20, color: "#94a3b8" }}>No returns</td></tr>}
-                      {details.returns.map((r) => (
-                        <tr key={r._id}>
-                          <td style={{ fontFamily: "monospace", fontSize: 12 }}>{(r._id || "").slice(-6).toUpperCase()}</td>
-                          <td>{r.customerName || "-"}</td>
-                          <td>{r.productType || "-"}</td>
-                          <td>{r.numberOfUnitsReturning || 0}</td>
-                          <td>{r.returnReason || "-"}</td>
-                          <td>{statusBadge(r.returnStatus)}</td>
-                          <td>{formatDateTime(r.createdAt)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              <div className="table-shell glass-card" style={{ padding: 20, marginBottom: 20 }}>
-                <div className="table-header"><h3>CRM Customers ({details.customers.length})</h3></div>
-                <div className="table-scroll">
-                  <table>
-                    <thead>
-                      <tr><th>Name</th><th>Mobile</th><th>Email</th><th>District</th><th>State</th><th>Follow Up</th><th>Date</th></tr>
-                    </thead>
-                    <tbody>
-                      {details.customers.length === 0 && <tr><td colSpan={7} style={{ textAlign: "center", padding: 20, color: "#94a3b8" }}>No CRM customers</td></tr>}
-                      {details.customers.map((c) => (
-                        <tr key={c._id}>
-                          <td style={{ fontWeight: 600 }}>{c.customerName || "-"}</td>
-                          <td>{c.mobile || "-"}</td>
-                          <td>{c.email || "-"}</td>
-                          <td>{c.district || "-"}</td>
-                          <td>{c.state || "-"}</td>
-                          <td>{c.followUp || "-"}</td>
-                          <td>{formatDateTime(c.createdAt)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              <div className="table-shell glass-card" style={{ padding: 20 }}>
-                <div className="table-header"><h3>Calling Records ({details.callingRecords.length})</h3></div>
-                <div className="table-scroll">
-                  <table>
-                    <thead>
-                      <tr><th>Date</th><th>Outgoing</th><th>Incoming</th><th>Connected</th><th>Not Connected</th><th>Interested</th><th>Not Interested</th><th>F/U Calls</th><th>F/U Leads</th><th>Total Calls</th><th>Conversions</th><th>Revenue</th></tr>
-                    </thead>
-                    <tbody>
-                      {details.callingRecords.length === 0 && <tr><td colSpan={12} style={{ textAlign: "center", padding: 20, color: "#94a3b8" }}>No calling records</td></tr>}
-                      {details.callingRecords.map((c) => {
-                        const totalCalls = (c.outgoingCalls || 0) + (c.incomingCalls || 0) + (c.followUpCalls || 0);
-                        return (
-                          <tr key={c._id}>
-                            <td>{formatDate(c.date)}</td>
-                            <td>{c.outgoingCalls || 0}</td>
-                            <td>{c.incomingCalls || 0}</td>
-                            <td>{c.connectedCalls || 0}</td>
-                            <td>{c.notConnectedCalls || 0}</td>
-                            <td>{c.interestedLeads || 0}</td>
-                            <td>{c.notInterestedLeads || 0}</td>
-                            <td>{c.followUpCalls || 0}</td>
-                            <td>{c.followUpLeads || 0}</td>
-                            <td style={{ fontWeight: 600 }}>{totalCalls}</td>
-                            <td>{c.conversionsDone || 0}</td>
-                            <td style={{ fontWeight: 600 }}>Rs.{c.revenueGenerated || 0}</td>
+            {!detailsLoading && details && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                {/* Orders table */}
+                <div className="table-shell glass-card" style={{ padding: 20 }}>
+                  <div className="table-header"><h3>Orders ({details.orders.length})</h3></div>
+                  <div className="table-scroll" style={{ overflowX: "auto", width: "100%", maxWidth: "100%" }}>
+                    <table style={{ minWidth: "800px" }}>
+                      <thead>
+                        <tr><th>ID</th><th>Customer</th><th>Product</th><th>Qty</th><th>Amount</th><th>Status</th><th>Date</th></tr>
+                      </thead>
+                      <tbody>
+                        {details.orders.length === 0 && <tr><td colSpan={7} style={{ textAlign: "center", padding: 20, color: "#94a3b8" }}>No orders</td></tr>}
+                        {details.orders.map((o) => (
+                          <tr key={o._id}>
+                            <td style={{ fontFamily: "monospace", fontSize: 12 }}>{(o._id || "").slice(-6).toUpperCase()}</td>
+                            <td>{o.customerName || "-"}</td>
+                            <td>{o.productType || "-"}</td>
+                            <td>{o.numberOfUnits || 0}</td>
+                            <td>Rs.{o.totalAmount || 0}</td>
+                            <td>{statusBadge(o.orderStatus)}</td>
+                            <td>{formatDateTime(o.createdAt)}</td>
                           </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Returns table */}
+                <div className="table-shell glass-card" style={{ padding: 20 }}>
+                  <div className="table-header"><h3>Returns ({details.returns.length})</h3></div>
+                  <div className="table-scroll" style={{ overflowX: "auto", width: "100%", maxWidth: "100%" }}>
+                    <table style={{ minWidth: "800px" }}>
+                      <thead>
+                        <tr><th>ID</th><th>Customer</th><th>Product</th><th>Qty</th><th>Reason</th><th>Status</th><th>Date</th></tr>
+                      </thead>
+                      <tbody>
+                        {details.returns.length === 0 && <tr><td colSpan={7} style={{ textAlign: "center", padding: 20, color: "#94a3b8" }}>No returns</td></tr>}
+                        {details.returns.map((r) => (
+                          <tr key={r._id}>
+                            <td style={{ fontFamily: "monospace", fontSize: 12 }}>{(r._id || "").slice(-6).toUpperCase()}</td>
+                            <td>{r.customerName || "-"}</td>
+                            <td>{r.productType || "-"}</td>
+                            <td>{r.numberOfUnitsReturning || 0}</td>
+                            <td>{r.returnReason || "-"}</td>
+                            <td>{statusBadge(r.returnStatus)}</td>
+                            <td>{formatDateTime(r.createdAt)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* CRM Customers table */}
+                <div className="table-shell glass-card" style={{ padding: 20 }}>
+                  <div className="table-header"><h3>CRM Customers ({details.customers.length})</h3></div>
+                  <div className="table-scroll" style={{ overflowX: "auto", width: "100%", maxWidth: "100%" }}>
+                    <table style={{ minWidth: "800px" }}>
+                      <thead>
+                        <tr><th>Name</th><th>Mobile</th><th>Email</th><th>District</th><th>State</th><th>Follow Up</th><th>Date</th></tr>
+                      </thead>
+                      <tbody>
+                        {details.customers.length === 0 && <tr><td colSpan={7} style={{ textAlign: "center", padding: 20, color: "#94a3b8" }}>No CRM customers</td></tr>}
+                        {details.customers.map((c) => (
+                          <tr key={c._id}>
+                            <td style={{ fontWeight: 600 }}>{c.customerName || "-"}</td>
+                            <td>{c.mobile || "-"}</td>
+                            <td>{c.email || "-"}</td>
+                            <td>{c.district || "-"}</td>
+                            <td>{c.state || "-"}</td>
+                            <td>{c.followUp || "-"}</td>
+                            <td>{formatDateTime(c.createdAt)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Calling Records table */}
+                <div className="table-shell glass-card" style={{ padding: 20 }}>
+                  <div className="table-header"><h3>Calling Records ({details.callingRecords.length})</h3></div>
+                  <div className="table-scroll" style={{ overflowX: "auto", width: "100%", maxWidth: "100%" }}>
+                    <table style={{ minWidth: "1200px" }}>
+                      <thead>
+                        <tr><th>Date</th><th>Outgoing</th><th>Incoming</th><th>Connected</th><th>Not Connected</th><th>Interested</th><th>Not Interested</th><th>F/U Calls</th><th>F/U Leads</th><th>Total Calls</th><th>Conversions</th><th>Revenue</th></tr>
+                      </thead>
+                      <tbody>
+                        {details.callingRecords.length === 0 && <tr><td colSpan={12} style={{ textAlign: "center", padding: 20, color: "#94a3b8" }}>No calling records</td></tr>}
+                        {details.callingRecords.map((c) => {
+                          const totalCalls = (c.outgoingCalls || 0) + (c.incomingCalls || 0) + (c.followUpCalls || 0);
+                          return (
+                            <tr key={c._id}>
+                              <td>{formatDate(c.date)}</td>
+                              <td>{c.outgoingCalls || 0}</td>
+                              <td>{c.incomingCalls || 0}</td>
+                              <td>{c.connectedCalls || 0}</td>
+                              <td>{c.notConnectedCalls || 0}</td>
+                              <td>{c.interestedLeads || 0}</td>
+                              <td>{c.notInterestedLeads || 0}</td>
+                              <td>{c.followUpCalls || 0}</td>
+                              <td>{c.followUpLeads || 0}</td>
+                              <td style={{ fontWeight: 600 }}>{totalCalls}</td>
+                              <td>{c.conversionsDone || 0}</td>
+                              <td style={{ fontWeight: 600 }}>Rs.{c.revenueGenerated || 0}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
-            </>
-          )}
+            )}
+          </div>
         </div>
       )}
     </section>

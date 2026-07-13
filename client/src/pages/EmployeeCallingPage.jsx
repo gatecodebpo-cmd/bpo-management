@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 import { api } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import Toast from "../components/Toast";
@@ -32,7 +34,56 @@ const getInitialState = () => ({
   revenueGenerated: "",
 });
 
+const downloadCallingPDF = (records) => {
+  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  let y = 15;
+
+  doc.setFontSize(18);
+  doc.setFont("helvetica", "bold");
+  doc.text("Calling Records Report", pageWidth / 2, y, { align: "center" });
+  y += 7;
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.text(`Generated: ${new Date().toLocaleDateString("en-IN")} | Total Records: ${records.length}`, pageWidth / 2, y, { align: "center" });
+  y += 8;
+
+  autoTable(doc, {
+    startY: y,
+    theme: "grid",
+    head: [["Date", "Executive", "Outgoing", "Incoming", "Connected", "Not Connected", "Interested", "Not Interested", "Follow-Up Calls", "Follow-Up Leads", "Total Calls", "Conversions", "Revenue"]],
+    body: records.map((r) => [
+      r.date ? new Date(r.date).toLocaleDateString("en-IN") : "-",
+      r.employeeName || "-",
+      r.outgoingCalls || 0,
+      r.incomingCalls || 0,
+      r.connectedCalls || 0,
+      r.notConnectedCalls || 0,
+      r.interestedLeads || 0,
+      r.notInterestedLeads || 0,
+      r.followUpCalls || 0,
+      r.followUpLeads || 0,
+      (r.outgoingCalls || 0) + (r.incomingCalls || 0) + (r.followUpCalls || 0),
+      r.conversionsDone || 0,
+      `Rs. ${r.revenueGenerated || 0}`
+    ]),
+    headStyles: { fillColor: [139, 92, 246], fontSize: 7, fontStyle: "bold" },
+    bodyStyles: { fontSize: 7 },
+    styles: { cellPadding: 1.5 }
+  });
+
+  doc.save("Calling_Records_Report.pdf");
+};
+
 const EmployeeCallingPage = () => {
+  const today = (() => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  })();
+
   const { user } = useAuth();
   const [records, setRecords] = useState([]);
   const [form, setForm] = useState(getInitialState());
@@ -44,10 +95,16 @@ const EmployeeCallingPage = () => {
   const [filter, setFilter] = useState("today");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [isFormOpen, setIsFormOpen] = useState(false);
 
   useEffect(() => {
-    if (editingId) window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [editingId]);
+    if (isFormOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [isFormOpen]);
 
   const clearToast = useCallback(() => setToast(null), []);
 
@@ -106,6 +163,7 @@ const EmployeeCallingPage = () => {
       setToast("Calling report submitted successfully!");
       setForm(getInitialState());
       setErrors({});
+      setIsFormOpen(false);
       fetchRecords();
     } catch (error) {
       setToast(error.response?.data?.message || "Failed to save calling report");
@@ -137,6 +195,7 @@ const EmployeeCallingPage = () => {
       setForm(getInitialState());
       setEditingId(null);
       setErrors({});
+      setIsFormOpen(false);
       fetchRecords();
     } catch (error) {
       setToast(error.response?.data?.message || "Failed to update calling report");
@@ -149,6 +208,7 @@ const EmployeeCallingPage = () => {
     setForm(getInitialState());
     setEditingId(null);
     setErrors({});
+    setIsFormOpen(false);
   };
 
   const handleEdit = (record) => {
@@ -165,6 +225,7 @@ const EmployeeCallingPage = () => {
       revenueGenerated: record.revenueGenerated || "",
     });
     setEditingId(record._id);
+    setIsFormOpen(true);
   };
 
   const totalCalls = (Number(form.outgoingCalls) || 0) + (Number(form.incomingCalls) || 0) + (Number(form.followUpCalls) || 0);
@@ -176,87 +237,104 @@ const EmployeeCallingPage = () => {
           <h2>Calling Report</h2>
           <p className="page-subtitle">Submit your daily calling performance</p>
         </div>
+        <button className="primary-btn" onClick={() => { handleReset(); setIsFormOpen(true); }}>
+          + Create Calling Record
+        </button>
       </div>
 
-      <div className="glass-card" style={{ padding: 24, marginBottom: 24 }}>
-        <h3 style={{ marginBottom: 16, fontSize: 16 }}>{editingId ? "Update Calling Record" : "New Calling Record"}</h3>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 16 }}>
-          <label className="field-wrap">
-            <span>Date</span>
-            <input type="date" name="date" value={form.date} onChange={handleChange} />
-          </label>
-          <label className="field-wrap">
-            <span>Executive Name</span>
-            <input type="text" value={user?.name || "Employee"} readOnly disabled />
-          </label>
-          <label className="field-wrap">
-            <span>Outgoing Calls</span>
-            <input type="number" name="outgoingCalls" value={form.outgoingCalls} onChange={handleChange} min="0" />
-          </label>
-          <label className="field-wrap">
-            <span>Incoming Calls</span>
-            <input type="number" name="incomingCalls" value={form.incomingCalls} onChange={handleChange} min="0" />
-          </label>
-          <label className="field-wrap">
-            <span>Connected Calls</span>
-            <input type="number" name="connectedCalls" value={form.connectedCalls} onChange={handleChange} min="0" />
-          </label>
-          <label className="field-wrap">
-            <span>Not Connected Calls</span>
-            <input type="number" value={Math.max((Number(form.outgoingCalls) || 0) + (Number(form.incomingCalls) || 0) - (Number(form.connectedCalls) || 0), 0)} readOnly disabled style={{ fontWeight: 700, color: "var(--primary)" }} />
-          </label>
-          <label className="field-wrap">
-            <span>Interested Leads</span>
-            <input type="number" name="interestedLeads" value={form.interestedLeads} onChange={handleChange} min="0" />
-          </label>
-          <label className="field-wrap">
-            <span>Not Interested Leads</span>
-            <input type="number" name="notInterestedLeads" value={form.notInterestedLeads} onChange={handleChange} min="0" />
-          </label>
-          <label className="field-wrap">
-            <span>Follow-up Calls</span>
-            <input type="number" name="followUpCalls" value={form.followUpCalls} onChange={handleChange} min="0" />
-          </label>
-          <label className="field-wrap">
-            <span>Follow-up Leads</span>
-            <input type="number" name="followUpLeads" value={form.followUpLeads} onChange={handleChange} min="0" />
-          </label>
-          <label className="field-wrap">
-            <span>Total Calls Done</span>
-            <input type="number" value={totalCalls} readOnly disabled style={{ fontWeight: 700, color: "var(--primary)" }} />
-          </label>
-          <label className="field-wrap">
-            <span>Conversions Done <span style={{ color: "var(--danger)" }}>*</span></span>
-            <input
-              type="number" name="conversionsDone" value={form.conversionsDone} onChange={handleChange} min="0"
-              style={errors.conversionsDone ? { borderColor: "var(--danger)" } : {}}
-            />
-            {errors.conversionsDone && <small style={{ color: "var(--danger)", fontSize: 11 }}>{errors.conversionsDone}</small>}
-          </label>
-          <label className="field-wrap">
-            <span>Revenue Generated (₹) <span style={{ color: "var(--danger)" }}>*</span></span>
-            <input
-              type="number" name="revenueGenerated" value={form.revenueGenerated} onChange={handleChange} min="0"
-              style={errors.revenueGenerated ? { borderColor: "var(--danger)" } : {}}
-            />
-            {errors.revenueGenerated && <small style={{ color: "var(--danger)", fontSize: 11 }}>{errors.revenueGenerated}</small>}
-          </label>
+      {isFormOpen && (
+        <div className="modal-overlay" onClick={handleReset}>
+          <div className="modal-box" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "800px", width: "95%", maxHeight: "90vh", overflowY: "auto" }}>
+            <div className="modal-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "var(--text-heading)" }}>
+                {editingId ? "Update Calling Record" : "New Calling Record"}
+              </h3>
+              <button
+                onClick={handleReset}
+                style={{ background: "none", border: "none", color: "var(--text-muted)", fontSize: 24, cursor: "pointer", lineHeight: 1 }}
+              >
+                &times;
+              </button>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 16 }}>
+              <label className="field-wrap">
+                <span>Date</span>
+                <input type="date" name="date" value={form.date} max={today} onChange={handleChange} />
+              </label>
+              <label className="field-wrap">
+                <span>Executive Name</span>
+                <input type="text" value={user?.name || "Employee"} readOnly disabled />
+              </label>
+              <label className="field-wrap">
+                <span>Outgoing Calls</span>
+                <input type="number" name="outgoingCalls" value={form.outgoingCalls} onChange={handleChange} min="0" />
+              </label>
+              <label className="field-wrap">
+                <span>Incoming Calls</span>
+                <input type="number" name="incomingCalls" value={form.incomingCalls} onChange={handleChange} min="0" />
+              </label>
+              <label className="field-wrap">
+                <span>Connected Calls</span>
+                <input type="number" name="connectedCalls" value={form.connectedCalls} onChange={handleChange} min="0" />
+              </label>
+              <label className="field-wrap">
+                <span>Not Connected Calls</span>
+                <input type="number" value={Math.max((Number(form.outgoingCalls) || 0) + (Number(form.incomingCalls) || 0) - (Number(form.connectedCalls) || 0), 0)} readOnly disabled style={{ fontWeight: 700, color: "var(--primary)" }} />
+              </label>
+              <label className="field-wrap">
+                <span>Interested Leads</span>
+                <input type="number" name="interestedLeads" value={form.interestedLeads} onChange={handleChange} min="0" />
+              </label>
+              <label className="field-wrap">
+                <span>Not Interested Leads</span>
+                <input type="number" name="notInterestedLeads" value={form.notInterestedLeads} onChange={handleChange} min="0" />
+              </label>
+              <label className="field-wrap">
+                <span>Follow-up Calls</span>
+                <input type="number" name="followUpCalls" value={form.followUpCalls} onChange={handleChange} min="0" />
+              </label>
+              <label className="field-wrap">
+                <span>Follow-up Leads</span>
+                <input type="number" name="followUpLeads" value={form.followUpLeads} onChange={handleChange} min="0" />
+              </label>
+              <label className="field-wrap">
+                <span>Total Calls Done</span>
+                <input type="number" value={totalCalls} readOnly disabled style={{ fontWeight: 700, color: "var(--primary)" }} />
+              </label>
+              <label className="field-wrap">
+                <span>Conversions Done <span style={{ color: "var(--danger)" }}>*</span></span>
+                <input
+                  type="number" name="conversionsDone" value={form.conversionsDone} onChange={handleChange} min="0"
+                  style={errors.conversionsDone ? { borderColor: "var(--danger)" } : {}}
+                />
+                {errors.conversionsDone && <small style={{ color: "var(--danger)", fontSize: 11 }}>{errors.conversionsDone}</small>}
+              </label>
+              <label className="field-wrap">
+                <span>Revenue Generated (₹) <span style={{ color: "var(--danger)" }}>*</span></span>
+                <input
+                  type="number" name="revenueGenerated" value={form.revenueGenerated} onChange={handleChange} min="0"
+                  style={errors.revenueGenerated ? { borderColor: "var(--danger)" } : {}}
+                />
+                {errors.revenueGenerated && <small style={{ color: "var(--danger)", fontSize: 11 }}>{errors.revenueGenerated}</small>}
+              </label>
+            </div>
+            <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
+              {editingId ? (
+                <button className="primary-btn" onClick={handleUpdate} disabled={saving}>
+                  {saving ? "Updating..." : "Update"}
+                </button>
+              ) : (
+                <button className="primary-btn" onClick={handleSave} disabled={saving}>
+                  {saving ? "Saving..." : "Save"}
+                </button>
+              )}
+              <button className="primary-btn" onClick={handleReset} style={{ background: "var(--bg-card)", color: "var(--text)", border: "1px solid var(--border)" }}>
+                Cancel
+              </button>
+            </div>
+          </div>
         </div>
-        <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
-          {editingId ? (
-            <button className="primary-btn" onClick={handleUpdate} disabled={saving}>
-              {saving ? "Updating..." : "Update"}
-            </button>
-          ) : (
-            <button className="primary-btn" onClick={handleSave} disabled={saving}>
-              {saving ? "Saving..." : "Save"}
-            </button>
-          )}
-          <button className="primary-btn" onClick={handleReset} style={{ background: "var(--bg-card)", color: "var(--text)", border: "1px solid var(--border)" }}>
-            Reset
-          </button>
-        </div>
-      </div>
+      )}
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 20 }}>
         {FILTERS.map((f) => (
@@ -276,9 +354,28 @@ const EmployeeCallingPage = () => {
         ))}
         {filter === "custom" && (
           <>
-            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} style={{ width: "auto", padding: "8px 12px", fontSize: 13 }} />
+            <input
+              type="date"
+              value={startDate}
+              max={today}
+              onChange={(e) => {
+                const val = e.target.value;
+                setStartDate(val);
+                if (endDate && val > endDate) {
+                  setEndDate("");
+                }
+              }}
+              style={{ width: "auto", padding: "8px 12px", fontSize: 13 }}
+            />
             <span style={{ color: "var(--text-muted)", alignSelf: "center" }}>to</span>
-            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} style={{ width: "auto", padding: "8px 12px", fontSize: 13 }} />
+            <input
+              type="date"
+              value={endDate}
+              min={startDate}
+              max={today}
+              onChange={(e) => setEndDate(e.target.value)}
+              style={{ width: "auto", padding: "8px 12px", fontSize: 13 }}
+            />
           </>
         )}
         <button onClick={fetchRecords} className="primary-btn" style={{ padding: "8px 16px", fontSize: 13 }}>
@@ -287,8 +384,11 @@ const EmployeeCallingPage = () => {
       </div>
 
       <div className="table-shell glass-card">
-        <div className="table-header">
+        <div className="table-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <h3>Calling Records ({records.length})</h3>
+          <button onClick={() => downloadCallingPDF(records)} className="primary-btn" style={{ background: "#10b981", padding: "8px 16px", fontSize: 13 }}>
+            ⬇ Download PDF
+          </button>
         </div>
         <div className="table-scroll">
           <table>

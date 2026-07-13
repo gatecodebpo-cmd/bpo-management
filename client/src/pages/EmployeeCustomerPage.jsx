@@ -91,6 +91,14 @@ const downloadCustomerPDF = (customers) => {
 };
 
 const EmployeeCustomerPage = () => {
+  const today = (() => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  })();
+
   const [customers, setCustomers] = useState([]);
   const [form, setForm] = useState(initialState);
   const [editingId, setEditingId] = useState(null);
@@ -102,9 +110,16 @@ const EmployeeCustomerPage = () => {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
+  const [isFormOpen, setIsFormOpen] = useState(false);
+
   useEffect(() => {
-    if (editingId) window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [editingId]);
+    if (isFormOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [isFormOpen]);
 
   const fetchCustomers = useCallback(async () => {
     try {
@@ -144,6 +159,7 @@ const EmployeeCustomerPage = () => {
       await api.post("/customers", form);
       setToast("Customer information submitted successfully!");
       setForm(initialState);
+      setIsFormOpen(false);
       fetchCustomers();
     } catch (error) {
       setToast(error.response?.data?.message || "Failed to save customer");
@@ -160,6 +176,7 @@ const EmployeeCustomerPage = () => {
       setToast("Customer information updated successfully!");
       setForm(initialState);
       setEditingId(null);
+      setIsFormOpen(false);
       fetchCustomers();
     } catch (error) {
       setToast(error.response?.data?.message || "Failed to update customer");
@@ -171,6 +188,7 @@ const EmployeeCustomerPage = () => {
   const handleReset = () => {
     setForm(initialState);
     setEditingId(null);
+    setIsFormOpen(false);
   };
 
   const handleEdit = (customer) => {
@@ -185,6 +203,7 @@ const EmployeeCustomerPage = () => {
       followUp: customer.followUp || "Convert"
     });
     setEditingId(customer._id);
+    setIsFormOpen(true);
   };
 
   return (
@@ -194,73 +213,87 @@ const EmployeeCustomerPage = () => {
           <h2>Customer Information</h2>
           <p className="page-subtitle">Add or manage customer details</p>
         </div>
-        <button className="primary-btn" style={{ background: "#10b981" }} onClick={() => downloadCustomerPDF(customers)}>
-          Download PDF
-        </button>
-      </div>
-
-      <div className="glass-card" style={{ padding: 24, marginBottom: 24 }}>
-        <h3 style={{ marginBottom: 16, fontSize: 16 }}>
-          {editingId ? "Update Customer" : "New Customer"}
-        </h3>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 16 }}>
-          <label className="field-wrap">
-            <span>Customer Name *</span>
-            <input type="text" name="customerName" value={form.customerName} onChange={handleChange} placeholder="Enter name" />
-          </label>
-          <label className="field-wrap">
-            <span>Mobile No. *</span>
-            <input type="text" name="mobile" value={form.mobile} onChange={handleChange} placeholder="Enter mobile" />
-          </label>
-          <label className="field-wrap">
-            <span>Email ID</span>
-            <input type="email" name="email" value={form.email} onChange={handleChange} placeholder="Enter email" />
-          </label>
-          <label className="field-wrap">
-            <span>Remark</span>
-            <input type="text" name="remark" value={form.remark} onChange={handleChange} placeholder="Any remark" />
-          </label>
-          <label className="field-wrap">
-            <span>District</span>
-            <input type="text" name="district" value={form.district} onChange={handleChange} placeholder="Enter district" />
-          </label>
-          <label className="field-wrap">
-            <span>State</span>
-            <input type="text" name="state" value={form.state} onChange={handleChange} placeholder="Enter state" />
-          </label>
-          <label className="field-wrap">
-            <span>Dist Cordinate</span>
-            <select name="distCordinate" value={form.distCordinate} onChange={handleChange}>
-              <option value="">Select</option>
-              <option value="CSP Incharge">CSP Incharge</option>
-              <option value="DC">DC</option>
-              <option value="SH">SH</option>
-              <option value="NH">NH</option>
-            </select>
-          </label>
-          <label className="field-wrap">
-            <span>Follow Up</span>
-            <select name="followUp" value={form.followUp} onChange={handleChange}>
-              <option value="Convert">Convert</option>
-              <option value="Converted">Converted</option>
-            </select>
-          </label>
-        </div>
-        <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
-          {editingId ? (
-            <button className="primary-btn" onClick={handleUpdate} disabled={saving}>
-              {saving ? "Updating..." : "Update"}
-            </button>
-          ) : (
-            <button className="primary-btn" onClick={handleSave} disabled={saving || !form.customerName.trim() || !form.mobile.trim()}>
-              {saving ? "Saving..." : "Save"}
-            </button>
-          )}
-          <button className="primary-btn" onClick={handleReset} style={{ background: "var(--bg-card)", color: "var(--text)", border: "1px solid var(--border)" }}>
-            Reset
+        <div style={{ display: "flex", gap: 12 }}>
+          <button className="primary-btn" onClick={() => { handleReset(); setIsFormOpen(true); }}>
+            + Create Customer
           </button>
         </div>
       </div>
+
+      {isFormOpen && (
+        <div className="modal-overlay" onClick={handleReset}>
+          <div className="modal-box" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "800px", width: "95%", maxHeight: "90vh", overflowY: "auto" }}>
+            <div className="modal-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "var(--text-heading)" }}>
+                {editingId ? "Update Customer" : "New Customer"}
+              </h3>
+              <button
+                onClick={handleReset}
+                style={{ background: "none", border: "none", color: "var(--text-muted)", fontSize: 24, cursor: "pointer", lineHeight: 1 }}
+              >
+                &times;
+              </button>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 16 }}>
+              <label className="field-wrap">
+                <span>Customer Name *</span>
+                <input type="text" name="customerName" value={form.customerName} onChange={handleChange} placeholder="Enter name" />
+              </label>
+              <label className="field-wrap">
+                <span>Mobile No. *</span>
+                <input type="text" name="mobile" value={form.mobile} onChange={handleChange} placeholder="Enter mobile" />
+              </label>
+              <label className="field-wrap">
+                <span>Email ID</span>
+                <input type="email" name="email" value={form.email} onChange={handleChange} placeholder="Enter email" />
+              </label>
+              <label className="field-wrap">
+                <span>Remark</span>
+                <input type="text" name="remark" value={form.remark} onChange={handleChange} placeholder="Any remark" />
+              </label>
+              <label className="field-wrap">
+                <span>District</span>
+                <input type="text" name="district" value={form.district} onChange={handleChange} placeholder="Enter district" />
+              </label>
+              <label className="field-wrap">
+                <span>State</span>
+                <input type="text" name="state" value={form.state} onChange={handleChange} placeholder="Enter state" />
+              </label>
+              <label className="field-wrap">
+                <span>Dist Cordinate</span>
+                <select name="distCordinate" value={form.distCordinate} onChange={handleChange}>
+                  <option value="">Select</option>
+                  <option value="CSP Incharge">CSP Incharge</option>
+                  <option value="DC">DC</option>
+                  <option value="SH">SH</option>
+                  <option value="NH">NH</option>
+                </select>
+              </label>
+              <label className="field-wrap">
+                <span>Follow Up</span>
+                <select name="followUp" value={form.followUp} onChange={handleChange}>
+                  <option value="Convert">Convert</option>
+                  <option value="Converted">Converted</option>
+                </select>
+              </label>
+            </div>
+            <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
+              {editingId ? (
+                <button className="primary-btn" onClick={handleUpdate} disabled={saving}>
+                  {saving ? "Updating..." : "Update"}
+                </button>
+              ) : (
+                <button className="primary-btn" onClick={handleSave} disabled={saving || !form.customerName.trim() || !form.mobile.trim()}>
+                  {saving ? "Saving..." : "Save"}
+                </button>
+              )}
+              <button className="primary-btn" onClick={handleReset} style={{ background: "var(--bg-card)", color: "var(--text)", border: "1px solid var(--border)" }}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="glass-card" style={{ padding: "10px 20px", marginBottom: 16, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
         <span style={{ fontSize: 13, color: "var(--text-muted)", fontWeight: 500 }}>Filter by Date:</span>
@@ -279,11 +312,28 @@ const EmployeeCustomerPage = () => {
         ))}
         {dateFilter === "custom" && (
           <>
-            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} max={new Date().toISOString().split("T")[0]}
-              style={{ background: "rgba(255,255,255,0.06)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text)", padding: "6px 10px", fontSize: 13 }} />
+            <input
+              type="date"
+              value={startDate}
+              max={today}
+              onChange={(e) => {
+                const val = e.target.value;
+                setStartDate(val);
+                if (endDate && val > endDate) {
+                  setEndDate("");
+                }
+              }}
+              style={{ background: "rgba(255,255,255,0.06)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text)", padding: "6px 10px", fontSize: 13 }}
+            />
             <span style={{ color: "var(--text-muted)", fontSize: 13 }}>to</span>
-            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} max={new Date().toISOString().split("T")[0]}
-              style={{ background: "rgba(255,255,255,0.06)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text)", padding: "6px 10px", fontSize: 13 }} />
+            <input
+              type="date"
+              value={endDate}
+              min={startDate}
+              max={today}
+              onChange={(e) => setEndDate(e.target.value)}
+              style={{ background: "rgba(255,255,255,0.06)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text)", padding: "6px 10px", fontSize: 13 }}
+            />
           </>
         )}
         <button onClick={fetchCustomers} className="primary-btn" style={{ padding: "6px 16px", fontSize: 13 }}>
@@ -310,8 +360,11 @@ const EmployeeCustomerPage = () => {
           : customers.filter((c) => c.followUp === followUpFilter);
         return (
       <div className="table-shell glass-card">
-        <div className="table-header">
+        <div className="table-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <h3>Customer Records ({filtered.length}/{customers.length})</h3>
+          <button onClick={() => downloadCustomerPDF(filtered)} className="primary-btn" style={{ background: "#10b981", padding: "8px 16px", fontSize: 13 }}>
+            ⬇ Download PDF
+          </button>
         </div>
         <div className="table-scroll">
           <table>

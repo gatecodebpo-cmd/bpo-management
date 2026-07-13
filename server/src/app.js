@@ -22,6 +22,15 @@ app.use(cors());
 app.use(express.json());
 app.use(morgan("dev"));
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+app.use("/uploads", (req, res, next) => {
+  res.setHeader("Content-Type", "image/svg+xml");
+  res.status(404).send(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
+      <rect width="100%" height="100%" fill="#1e293b"/>
+      <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#94a3b8">Screenshot Not Found</text>
+    </svg>`
+  );
+});
 
 app.get("/api/health", (req, res) => {
   res.status(200).json({ message: "API running" });

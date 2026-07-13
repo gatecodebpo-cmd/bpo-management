@@ -80,8 +80,17 @@ const fetchOrders = async () => {
 };
 
 const OrderHistoryPage = () => {
+  const today = (() => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  })();
+
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedDate, setSelectedDate] = useState("");
 
   useEffect(() => {
     let mounted = true;
@@ -101,6 +110,13 @@ const OrderHistoryPage = () => {
     handleRefresh();
   };
 
+  const filteredOrders = orders.filter((o) => {
+    if (!selectedDate) return true;
+    if (!o.createdAt) return false;
+    const orderDate = o.createdAt.split("T")[0];
+    return orderDate === selectedDate;
+  });
+
   return (
     <section className="admin-page">
       <div className="admin-head">
@@ -113,13 +129,43 @@ const OrderHistoryPage = () => {
         <button className="logout-btn" onClick={handleRefresh} title="Refresh data">Refresh</button>
       </div>
 
+      <div style={{ display: "flex", gap: 12, marginBottom: 20, flexWrap: "wrap", alignItems: "center" }}>
+        <label className="field-wrap" style={{ minWidth: 200, flexDirection: "row", gap: 8, alignItems: "center", margin: 0 }}>
+          <span style={{ fontSize: 13, color: "var(--text-muted)", fontWeight: 500 }}>Filter by Date:</span>
+          <input
+            type="date"
+            value={selectedDate}
+            max={today}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            style={{
+              padding: "6px 10px",
+              borderRadius: 8,
+              border: "1px solid var(--border)",
+              background: "rgba(255, 255, 255, 0.04)",
+              color: "var(--text)",
+              fontSize: 13,
+              outline: "none"
+            }}
+          />
+        </label>
+        {selectedDate && (
+          <button
+            className="primary-btn"
+            style={{ background: "#64748b", padding: "6px 12px", fontSize: 12 }}
+            onClick={() => setSelectedDate("")}
+          >
+            Clear Date
+          </button>
+        )}
+      </div>
+
       {loading ? (
         <div className="glass-card" style={{ padding: "60px 24px", textAlign: "center", color: "var(--text-muted)", fontSize: 14 }}>Loading...</div>
       ) : (
         <DataTable
           title="Orders"
           columns={columns}
-          data={orders}
+          data={filteredOrders}
           searchKeys={["employeeName", "customerName", "mobileNumber", "alternateMobileNumber", "productType", "orderStatus", "parcelStatus", "trackingId", "courierCompany"]}
           onDelete={handleDelete}
         />
